@@ -1,0 +1,428 @@
+{% extends 'base.html' %}
+{% block title %}Paramètres — PharmaGest{% endblock %}
+{% block page_title %}Paramètres{% endblock %}
+
+{% block extra_css %}
+<style>
+.tab-nav {
+  display: flex; gap: 4px;
+  background: #F4F6F5; padding: 6px;
+  border-radius: 12px; margin-bottom: 20px; flex-wrap: wrap;
+}
+.tab-nav-btn {
+  flex: 1; min-width: 120px; padding: 10px 16px;
+  border: none; border-radius: 8px; background: transparent;
+  color: #666; font-size: 13px; font-weight: 500; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; gap: 6px;
+  transition: all 0.15s;
+}
+.tab-nav-btn.active {
+  background: #fff; color: #0F6E56;
+  box-shadow: 0 1px 6px rgba(0,0,0,.08);
+}
+.tab-nav-btn:hover:not(.active) { background: rgba(255,255,255,.6); color: #0F6E56; }
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+.section-title {
+  font-size: 12px; font-weight: 600; color: #0F6E56;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  margin-bottom: 14px; padding-bottom: 8px;
+  border-bottom: 2px solid #E8F5F0;
+}
+.couleur-opt {
+  width: 32px; height: 32px; border-radius: 50%;
+  cursor: pointer; border: 3px solid transparent;
+  transition: border-color 0.15s, transform 0.15s;
+  flex-shrink: 0;
+}
+.couleur-opt.selected { border-color: #1A1A1A; transform: scale(1.2); }
+.logo-preview {
+  width: 90px; height: 90px; border-radius: 12px;
+  border: 2px dashed #D0D0D0; display: flex;
+  align-items: center; justify-content: center;
+  overflow: hidden; background: #F9F9F9; cursor: pointer;
+  flex-shrink: 0;
+}
+.logo-preview img { width: 100%; height: 100%; object-fit: contain; }
+.logo-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+.info-box {
+  background: #E8F5F0; border: 0.5px solid #B2DFCF;
+  border-radius: 8px; padding: 10px 14px;
+  font-size: 12px; color: #0F6E56; margin-bottom: 16px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-lg-9">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+
+      <!-- Navigation onglets -->
+      <div class="tab-nav">
+        <button type="button" class="tab-nav-btn active" onclick="showTab('info',this)">
+          <i class="bi bi-hospital"></i> Pharmacie
+        </button>
+        <button type="button" class="tab-nav-btn" onclick="showTab('apparence',this)">
+          <i class="bi bi-palette"></i> Apparence
+        </button>
+        <button type="button" class="tab-nav-btn" onclick="showTab('securite',this)">
+          <i class="bi bi-shield-lock"></i> Sécurité
+        </button>
+        <button type="button" class="tab-nav-btn" onclick="showTab('apercu',this)">
+          <i class="bi bi-receipt"></i> Aperçu ticket
+        </button>
+      </div>
+
+      <!-- ═══ ONGLET 1 : PHARMACIE ═══ -->
+      <div class="tab-content active card p-4" id="tab-info">
+        <div class="section-title"><i class="bi bi-info-circle me-2"></i>Informations de la pharmacie</div>
+
+        <!-- Logo -->
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Logo</label>
+          <div class="d-flex align-items-center gap-3">
+            <label class="logo-preview" for="logoInput">
+              {% if params.logo %}
+              <img src="{{ params.logo.url }}" id="logoImg" alt="Logo">
+              {% else %}
+              <div id="logoPlaceholder" style="text-align:center;color:#aaa;">
+                <i class="bi bi-camera" style="font-size:22px;display:block;"></i>
+                <span style="font-size:10px;">Cliquer</span>
+              </div>
+              {% endif %}
+            </label>
+            <div>
+              <input type="file" name="logo" id="logoInput" accept="image/png,image/jpeg"
+                     class="logo-input" onchange="previewLogo(this)">
+              <label for="logoInput" class="btn btn-outline-primary btn-sm">
+                <i class="bi bi-upload me-1"></i>Choisir un logo
+              </label>
+              <div class="form-text mt-1">PNG ou JPG — max 2MB<br>Recommandé : 200×200 px</div>
+              <div id="logoError" class="text-danger small mt-1" aria-live="polite"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-12">
+            <label class="form-label fw-semibold">Nom de la pharmacie *</label>
+            <input type="text" name="nom_pharmacie" class="form-control"
+                   value="{{ params.nom_pharmacie }}"
+                   placeholder="Ex: Pharmacie Centrale de Bamako" required>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Slogan</label>
+            <input type="text" name="slogan" class="form-control"
+                   value="{{ params.slogan }}"
+                   placeholder="Ex: Votre santé, notre priorité">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Téléphone</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-telephone"></i></span>
+              <input type="text" name="telephone" class="form-control"
+                     value="{{ params.telephone }}" placeholder="+223 XX XX XX XX">
+            </div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Email</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-envelope"></i></span>
+              <input type="email" name="email" class="form-control"
+                     value="{{ params.email }}" placeholder="contact@pharmacie.ml">
+            </div>
+          </div>
+          <div class="col-12">
+            <label class="form-label fw-semibold">Adresse complète</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-geo-alt"></i></span>
+              <textarea name="adresse" class="form-control" rows="2"
+                        placeholder="Ex: Rue 42, Badalabougou, Bamako, Mali">{{ params.adresse }}</textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ ONGLET 2 : APPARENCE ═══ -->
+      <div class="tab-content card p-4" id="tab-apparence">
+        <div class="section-title"><i class="bi bi-palette me-2"></i>Apparence et localisation</div>
+
+        <!-- Couleurs -->
+        <div class="mb-4">
+          <label class="form-label fw-semibold">Couleur principale</label>
+          <div class="d-flex align-items-center gap-3 flex-wrap mt-2">
+            <div onclick="setCouleur('#0F6E56')" class="couleur-opt {% if params.couleur == '#0F6E56' or not params.couleur %}selected{% endif %}" style="background:#0F6E56;" title="Vert"></div>
+            <div onclick="setCouleur('#185FA5')" class="couleur-opt {% if params.couleur == '#185FA5' %}selected{% endif %}" style="background:#185FA5;" title="Bleu"></div>
+            <div onclick="setCouleur('#534AB7')" class="couleur-opt {% if params.couleur == '#534AB7' %}selected{% endif %}" style="background:#534AB7;" title="Violet"></div>
+            <div onclick="setCouleur('#854F0B')" class="couleur-opt {% if params.couleur == '#854F0B' %}selected{% endif %}" style="background:#854F0B;" title="Marron"></div>
+            <div onclick="setCouleur('#C0392B')" class="couleur-opt {% if params.couleur == '#C0392B' %}selected{% endif %}" style="background:#C0392B;" title="Rouge"></div>
+            <div onclick="setCouleur('#1A1A1A')" class="couleur-opt {% if params.couleur == '#1A1A1A' %}selected{% endif %}" style="background:#1A1A1A;" title="Noir"></div>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <input type="color" id="couleurCustom" value="{{ params.couleur|default:'#0F6E56' }}"
+                     onchange="setCouleur(this.value)"
+                     style="width:32px;height:32px;border:none;border-radius:50%;cursor:pointer;padding:0;">
+              <span style="font-size:12px;color:#888;">Autre</span>
+            </div>
+          </div>
+          <input type="hidden" name="couleur" id="couleurInput" value="{{ params.couleur|default:'#0F6E56' }}">
+        </div>
+
+        <!-- Aperçu couleur -->
+        <div class="mb-4 p-3" style="border-radius:10px;border:0.5px solid #E0E0E0;">
+          <div style="font-size:12px;font-weight:600;color:#666;margin-bottom:8px;">Aperçu</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <div id="prevBtn" style="padding:7px 14px;border-radius:8px;color:#fff;font-size:13px;font-weight:500;background:#0F6E56;">Bouton</div>
+            <div id="prevBadge" style="padding:4px 10px;border-radius:6px;font-size:12px;background:#E8F5F0;color:#0F6E56;">Badge</div>
+            <div id="prevNav" style="padding:7px 12px;border-radius:8px;font-size:12px;color:#fff;background:#084033;">Menu</div>
+          </div>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Langue</label>
+            <select name="langue" class="form-select">
+              <option value="fr" {% if params.langue == 'fr' %}selected{% endif %}>🇫🇷 Français</option>
+              <option value="en" {% if params.langue == 'en' %}selected{% endif %}>🇬🇧 English</option>
+              <option value="ar" {% if params.langue == 'ar' %}selected{% endif %}>🇸🇦 العربية</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Devise</label>
+            <select name="devise" class="form-select">
+              <option value="FCFA" {% if params.devise == 'FCFA' %}selected{% endif %}>FCFA — Franc CFA</option>
+              <option value="EUR"  {% if params.devise == 'EUR'  %}selected{% endif %}>EUR — Euro</option>
+              <option value="USD"  {% if params.devise == 'USD'  %}selected{% endif %}>USD — Dollar</option>
+              <option value="XOF"  {% if params.devise == 'XOF'  %}selected{% endif %}>XOF — Franc Ouest Africain</option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label fw-semibold">Format de date</label>
+            <select name="format_date" class="form-select">
+              <option value="d/m/Y" {% if params.format_date == 'd/m/Y' %}selected{% endif %}>31/12/2026</option>
+              <option value="Y-m-d" {% if params.format_date == 'Y-m-d' %}selected{% endif %}>2026-12-31</option>
+              <option value="d-m-Y" {% if params.format_date == 'd-m-Y' %}selected{% endif %}>31-12-2026</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ ONGLET 3 : SÉCURITÉ ═══ -->
+      <div class="tab-content card p-4" id="tab-securite">
+        <div class="section-title"><i class="bi bi-shield-lock me-2"></i>Sécurité et accès</div>
+        <div class="info-box">
+          <i class="bi bi-info-circle me-1"></i>
+          Ces paramètres s'appliquent à tous les utilisateurs.
+        </div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Durée de session (minutes)</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-clock"></i></span>
+              <input type="number" name="session_duree" class="form-control"
+                     value="{{ params.session_duree }}" min="5" max="480">
+              <span class="input-group-text">min</span>
+            </div>
+            <div class="form-text">Déconnexion auto après inactivité</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-semibold">Tentatives de connexion max</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="bi bi-person-lock"></i></span>
+              <input type="number" name="tentatives_max" class="form-control"
+                     value="{{ params.tentatives_max }}" min="3" max="10">
+              <span class="input-group-text">fois</span>
+            </div>
+            <div class="form-text">Avant blocage du compte</div>
+          </div>
+
+          <div class="col-12 mt-3">
+            <div class="section-title"><i class="bi bi-key me-2"></i>Changer mon mot de passe</div>
+            <div class="row g-3">
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Nouveau mot de passe</label>
+                <input type="password" name="new_password" class="form-control" placeholder="••••••••">
+              </div>
+              <div class="col-md-6">
+                <label class="form-label fw-semibold">Confirmer</label>
+                <input type="password" name="confirm_password" class="form-control" placeholder="••••••••">
+              </div>
+            </div>
+          </div>
+
+      <div class="col-12 mt-3">
+            <div class="section-title"><i class="bi bi-database me-2"></i>Sauvegarde</div>
+
+            {% if form.errors %}
+              <div class="alert alert-danger mt-3" role="alert">
+                <div class="fw-semibold">Erreurs de validation</div>
+                <ul class="mb-0">
+                  {% for field, errors in form.errors.items %}
+                    <li><strong>{{ field }}:</strong> {{ errors|striptags }}</li>
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+
+            <div class="d-flex gap-2 flex-wrap">
+              <button type="button" class="btn btn-outline-secondary"
+                      onclick="alert('Disponible en production')">
+                <i class="bi bi-cloud-upload me-1"></i>Sauvegarder maintenant
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ═══ ONGLET 4 : APERÇU TICKET ═══ -->
+      <div class="tab-content card p-4" id="tab-apercu">
+        <div class="section-title"><i class="bi bi-receipt me-2"></i>Aperçu du ticket de caisse</div>
+        <div style="display:flex;justify-content:center;">
+          <div style="width:300px;background:#fff;border:1px dashed #ccc;
+                      border-radius:4px;padding:20px 16px;
+                      font-family:'Courier New',monospace;font-size:12px;color:#111;">
+            {% if params.logo %}
+            <div style="text-align:center;margin-bottom:8px;">
+              <img src="{{ params.logo.url }}" style="height:50px;object-fit:contain;">
+            </div>
+            {% endif %}
+            <div style="text-align:center;font-size:16px;font-weight:bold;letter-spacing:2px;">
+              {{ params.nom_pharmacie|upper }}
+            </div>
+            {% if params.slogan %}
+            <div style="text-align:center;font-size:10px;color:#888;">{{ params.slogan }}</div>
+            {% endif %}
+            <div style="text-align:center;font-size:10px;color:#888;margin-top:4px;">
+              {{ params.adresse }}<br>Tél : {{ params.telephone }}
+            </div>
+            <hr style="border-top:1px dashed #aaa;margin:10px 0;">
+            <div style="display:flex;justify-content:space-between;margin:4px 0;">
+              <span>Facture :</span><span>FACT-2026-0001</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin:4px 0;">
+              <span>Date :</span><span>09/05/2026 14:30</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin:4px 0;">
+              <span>Client :</span><span>Amadou Diallo</span>
+            </div>
+            <hr style="border-top:1px dashed #aaa;margin:10px 0;">
+            <div style="font-weight:500;">Amoxicilline 500mg</div>
+            <div style="display:flex;justify-content:space-between;padding-left:10px;color:#444;">
+              <span>x2 @ 1500 {{ params.devise }}</span><span>3000 {{ params.devise }}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-weight:bold;
+                        font-size:14px;margin-top:10px;padding-top:8px;
+                        border-top:1px dashed #aaa;">
+              <span>TOTAL</span><span>3000 {{ params.devise }}</span>
+            </div>
+            <hr style="border-top:1px dashed #aaa;margin:10px 0;">
+            <div style="text-align:center;color:#888;font-size:11px;line-height:1.8;">
+              Merci de votre confiance !<br>
+              Conservez ce ticket.<br>
+              --------------------------------<br>
+              PharmaGest &copy; 2026
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bouton enregistrer -->
+      <div class="d-flex justify-content-end mt-3">
+        <button type="submit" class="btn btn-primary px-4">
+          <i class="bi bi-check-lg me-1"></i>Enregistrer tous les paramètres
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+
+{% block extra_js %}
+<script>
+function showTab(key, btn) {
+  document.querySelectorAll('.tab-nav-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.getElementById('tab-' + key).classList.add('active');
+}
+
+function setCouleur(hex) {
+  document.getElementById('couleurInput').value = hex;
+  document.getElementById('couleurCustom').value = hex;
+  document.querySelectorAll('.couleur-opt').forEach(o => o.classList.remove('selected'));
+  document.getElementById('prevBtn').style.background = hex;
+  document.getElementById('prevBadge').style.color = hex;
+}
+
+function previewLogo(input) {
+  const errorBox = document.getElementById('logoError');
+  errorBox.textContent = '';
+
+  if (!input.files || !input.files[0]) {
+    return;
+  }
+
+  const file = input.files[0];
+  const allowedTypes = ['image/png', 'image/jpeg'];
+  const maxSize = 2 * 1024 * 1024;
+
+  if (!allowedTypes.includes(file.type)) {
+    input.value = '';
+    errorBox.textContent = 'Choisissez une image PNG ou JPG.';
+    return;
+  }
+
+  if (file.size > maxSize) {
+    input.value = '';
+    errorBox.textContent = 'Le logo ne doit pas dépasser 2MB.';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    const box = document.querySelector('.logo-preview');
+    box.innerHTML = `<img src="${e.target.result}" id="logoImg"
+                          style="width:100%;height:100%;object-fit:contain;">`;
+  };
+  reader.readAsDataURL(file);
+}
+
+function changeLanguage(langue) {
+  fetch('{% url "parametres:language_api" %}', {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({
+      language: langue
+    })
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.success) {
+      location.reload();
+    }
+  })
+  .catch(error => console.error('Error:', error));
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  const languageSelect = document.querySelector('select[name="langue"]');
+  if (languageSelect) {
+    languageSelect.addEventListener('change', function() {
+      changeLanguage(this.value);
+    });
+  }
+});
+</script>
+{% endblock %}
+
+{% endblock %}

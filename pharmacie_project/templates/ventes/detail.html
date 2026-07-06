@@ -1,0 +1,160 @@
+{% extends 'base.html' %}
+{% block title %}{{ vente.numero_facture }} — PharmaGest{% endblock %}
+{% block page_title %}Détail de la vente{% endblock %}
+
+{% block extra_css %}
+<style>
+@media print {
+  .sidebar, .topbar, .no-print { display: none !important; }
+  .main-content { margin: 0 !important; padding: 0 !important; }
+  body { background: #fff !important; }
+}
+
+.ticket-wrapper {
+  width: 320px;
+  margin: 0 auto;
+  background: #fff;
+  border: 1px dashed #ccc;
+  border-radius: 4px;
+  padding: 20px 16px;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12.5px;
+  color: #111;
+}
+.t-logo {
+  text-align: center;
+  font-size: 17px;
+  font-weight: bold;
+  letter-spacing: 3px;
+  margin-bottom: 4px;
+}
+.t-sub {
+  text-align: center;
+  font-size: 10px;
+  color: #888;
+  margin-bottom: 12px;
+}
+.t-sep {
+  border: none;
+  border-top: 1px dashed #aaa;
+  margin: 10px 0;
+}
+.t-row {
+  display: flex;
+  justify-content: space-between;
+  margin: 4px 0;
+}
+.t-row-indent {
+  display: flex;
+  justify-content: space-between;
+  margin: 2px 0;
+  padding-left: 10px;
+  color: #444;
+}
+.t-total {
+  display: flex;
+  justify-content: space-between;
+  font-weight: bold;
+  font-size: 15px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #aaa;
+}
+.t-footer {
+  text-align: center;
+  color: #888;
+  margin-top: 12px;
+  font-size: 11px;
+  line-height: 1.8;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+
+<!-- Boutons (cachés à l'impression) -->
+<div class="d-flex justify-content-center gap-2 mb-4 no-print">
+  <a href="{% url 'ventes:liste' %}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Retour
+  </a>
+  <button onclick="window.print()" class="btn btn-primary">
+    <i class="bi bi-printer me-1"></i>Imprimer
+  </button>
+</div>
+
+<!-- TICKET -->
+<div class="ticket-wrapper">
+
+  {% if site_params.logo %}
+  <div style="text-align:center;margin-bottom:4px;">
+    <img src="{{ site_params.logo.url }}" alt="Logo" style="height:44px;object-fit:contain;">
+  </div>
+  {% endif %}
+
+  <div class="t-logo">{{ site_params.nom_pharmacie|default:"PharmaGest" }}</div>
+
+  <div class="t-sub">
+    {% if site_params.adresse %}{{ site_params.adresse|linebreaksbr }}<br>{% endif %}
+    {% if site_params.telephone %}Tel : {{ site_params.telephone }}{% else %}Tel : +223 XX XX XX XX{% endif %}
+  </div>
+
+
+  <hr class="t-sep">
+
+  <div class="t-row">
+    <span>Facture :</span>
+    <span>{{ vente.numero_facture }}</span>
+  </div>
+  <div class="t-row">
+    <span>Date :</span>
+    <span>{{ vente.date_vente|date:site_params.format_date }} {{ vente.date_vente|date:"H:i" }}</span>
+  </div>
+  <div class="t-row">
+    <span>Client :</span>
+    <span>{{ vente.client|default:"Anonyme" }}</span>
+  </div>
+  <div class="t-row">
+    <span>Caissier :</span>
+    <span>{{ vente.utilisateur|default:"—" }}</span>
+  </div>
+
+  <hr class="t-sep">
+
+  {% for ligne in lignes %}
+  <div class="t-row" style="font-weight:500;">
+    <span>{{ ligne.medicament.nom }}</span>
+  </div>
+  <div class="t-row-indent">
+    <span>x{{ ligne.quantite }} @ {{ ligne.prix_unitaire|floatformat:0 }} {{ site_params.devise }}</span>
+    <span>{{ ligne.sous_total|stringformat:"%.2f"|floatformat:2|default_if_none:"0" }} {{ site_params.devise }}</span>
+
+
+
+  </div>
+  {% endfor %}
+
+  <div class="t-total">
+    <span>TOTAL</span>
+    <span>{{ vente.total|floatformat:2 }} {{ site_params.devise }}</span>
+
+
+  </div>
+
+  <hr class="t-sep">
+
+  <div style="text-align:center; font-size:11px; font-weight:bold;">
+    {% if vente.statut == 'validee' %}*** VENTE VALIDEE ***
+    {% else %}*** VENTE ANNULEE ***{% endif %}
+  </div>
+
+  <hr class="t-sep">
+
+  <div class="t-footer">
+    Merci de votre confiance !<br>
+    Conservez ce ticket.<br>
+    --------------------------------<br>
+    {{ site_params.nom_pharmacie|default:"PharmaGest" }} &copy; {{ vente.date_vente|date:"Y" }}
+  </div>
+
+</div>
+{% endblock %}

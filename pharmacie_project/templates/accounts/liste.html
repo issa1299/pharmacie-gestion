@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% block title %}Utilisateurs — PharmaGest{% endblock %}
+{% block page_title %}Gestion des utilisateurs{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-end mb-3">
+  <a href="{% url 'accounts:ajouter' %}" class="btn btn-primary">
+    <i class="bi bi-person-plus me-1"></i>Ajouter un utilisateur
+  </a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Utilisateur</th>
+          <th>Email</th>
+          <th>Telephone</th>
+          <th>Rôle</th>
+          <th>Statut</th>
+          <th>Date création</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for u in utilisateurs %}
+        <tr>
+          <td>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <div style="width:34px; height:34px; border-radius:50%;
+                          background:#1D9E75; display:flex; align-items:center;
+                          justify-content:center; font-size:13px; font-weight:700; color:#fff;">
+                {{ u.first_name|first|upper }}{{ u.last_name|first|upper }}
+              </div>
+              <div>
+                <div style="font-weight:500;">{{ u.get_full_name|default:u.username }}</div>
+                <div style="font-size:11px; color:#aaa;">@{{ u.username }}</div>
+              </div>
+            </div>
+          </td>
+          <td style="font-size:13px; color:#888;">{{ u.email|default:"—" }}</td>
+          <td style="font-size:13px; color:#888;">{{ u.profile.telephone|default:"—" }}</td>
+          <td>
+            {% if u.is_superuser %}
+            <span class="badge px-2 py-1 rounded-2" style="background:#EEEDFE; color:#534AB7;">
+              <i class="bi bi-shield-fill me-1"></i>Super admin
+            </span>
+            {% elif u.is_staff %}
+            <span class="badge px-2 py-1 rounded-2" style="background:var(--primary-bg); color:var(--primary);">
+              <i class="bi bi-shield-check me-1"></i>Administrateur
+            </span>
+            {% else %}
+            <span class="badge px-2 py-1 rounded-2" style="background:#F0F0F0; color:#555;">
+              <i class="bi bi-person me-1"></i>Caissier
+            </span>
+            {% endif %}
+          </td>
+          <td>
+            {% if u.is_active %}
+            <span class="badge badge-stock-ok px-2 py-1 rounded-2">
+              <i class="bi bi-check-circle me-1"></i>Actif
+            </span>
+            {% else %}
+            <span class="badge badge-stock-low px-2 py-1 rounded-2">
+              <i class="bi bi-x-circle me-1"></i>Inactif
+            </span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px; color:#aaa;">{{ u.date_joined|date:site_params.format_date }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{% url 'accounts:modifier' u.pk %}"
+                 class="btn-icon" title="Modifier"
+                 style="width:30px;height:30px;font-size:14px;">
+                <i class="bi bi-pencil"></i>
+              </a>
+              {% if u != request.user %}
+              <a href="{% url 'accounts:supprimer' u.pk %}"
+                 class="btn-icon" title="Supprimer"
+                 style="width:30px;height:30px;font-size:14px;color:#E24B4A;">
+                <i class="bi bi-trash"></i>
+              </a>
+              {% endif %}
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center py-5" style="color:#aaa;">
+            <i class="bi bi-people fs-2 d-block mb-2"></i>
+            Aucun utilisateur trouvé.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

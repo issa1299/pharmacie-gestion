@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Test - Language Management</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 900px;
+            width: 100%;
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .card {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+        
+        .card h2 {
+            font-size: 16px;
+            color: #667eea;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card p {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            flex: 1;
+            min-width: 100px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-success {
+            background: #48bb78;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #38a169;
+        }
+        
+        .btn-warning {
+            background: #f6ad55;
+            color: white;
+        }
+        
+        .btn-warning:hover {
+            background: #ed8936;
+        }
+        
+        .btn-danger {
+            background: #f56565;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #e53e3e;
+        }
+        
+        .language-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .lang-btn {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            background: white;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .lang-btn:hover {
+            border-color: #667eea;
+            background: #f0f4ff;
+        }
+        
+        .lang-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .output {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            color: #333;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .output.success {
+            background: #f0fdf4;
+            border-color: #86efac;
+            color: #166534;
+        }
+        
+        .output.error {
+            background: #fef2f2;
+            border-color: #fecaca;
+            color: #991b1b;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+            border-left: 3px solid #667eea;
+            padding-left: 10px;
+        }
+        
+        .log-entry.success {
+            border-left-color: #48bb78;
+        }
+        
+        .log-entry.error {
+            border-left-color: #f56565;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+        
+        .status.ok {
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .status.error {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        
+        .response-json {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        
+        @media (max-width: 768px) {
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .container {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌍 API Test - Language Management</h1>
+        <p class="subtitle">Testez l'API de gestion de langue de PharmaGest</p>
+        
+        <div class="grid">
+            <!-- GET Request -->
+            <div class="card">
+                <h2>📖 GET - Récupérer la langue</h2>
+                <p>Récupère la langue actuelle du système et la liste des langues supportées.</p>
+                <button class="btn-primary" onclick="testGET()">Exécuter GET</button>
+            </div>
+            
+            <!-- Quick Language Switch -->
+            <div class="card">
+                <h2>⚡ Changement rapide de langue</h2>
+                <p>Sélectionnez une langue pour la changer immédiatement:</p>
+                <div class="language-buttons">
+                    <button class="lang-btn active" onclick="switchLanguage('fr')">🇫🇷 FR</button>
+                    <button class="lang-btn" onclick="switchLanguage('en')">🇬🇧 EN</button>
+                    <button class="lang-btn" onclick="switchLanguage('ar')">🇸🇦 AR</button>
+                </div>
+            </div>
+            
+            <!-- PUT Request -->
+            <div class="card">
+                <h2>✏️ PUT - Changer la langue (JSON)</h2>
+                <p>Change la langue en utilisant le format JSON.</p>
+                <div class="buttons">
+                    <button class="btn-success" onclick="testPUT('en')">English</button>
+                    <button class="btn-warning" onclick="testPUT('ar')">العربية</button>
+                    <button class="btn-primary" onclick="testPUT('fr')">Français</button>
+                </div>
+            </div>
+            
+            <!-- POST Request -->
+            <div class="card">
+                <h2>📤 POST - Changer la langue (form-data)</h2>
+                <p>Change la langue en utilisant le format form-data.</p>
+                <div class="buttons">
+                    <button class="btn-success" onclick="testPOST('en')">English</button>
+                    <button class="btn-warning" onclick="testPOST('ar')">العربية</button>
+                    <button class="btn-primary" onclick="testPOST('fr')">Français</button>
+                </div>
+            </div>
+            
+            <!-- Error Tests -->
+            <div class="card">
+                <h2>❌ Tests d'erreur</h2>
+                <p>Testez les gestions d'erreur de l'API.</p>
+                <div class="buttons">
+                    <button class="btn-danger" onclick="testInvalidLanguage()">Langue invalide</button>
+                    <button class="btn-danger" onclick="testInvalidJSON()">JSON invalide</button>
+                </div>
+            </div>
+            
+            <!-- Utilities -->
+            <div class="card">
+                <h2>🛠️ Utilitaires</h2>
+                <p>Outils supplémentaires pour tester l'API.</p>
+                <div class="buttons">
+                    <button class="btn-primary" onclick="clearLogs()">Effacer les logs</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Output Panel -->
+        <div class="output" id="output">
+            <div class="log-entry">🟢 Prêt à tester l'API...</div>
+        </div>
+    </div>
+    
+    <script>
+        const API_URL = '/parametres/api/language/';
+        const output = document.getElementById('output');
+        
+        function log(message, type = 'info') {
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            
+            output.appendChild(entry);
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        function clearLogs() {
+            output.innerHTML = '<div class="log-entry">🟢 Logs effacés</div>';
+        }
+        
+        function updateLanguageButtons(current) {
+            document.querySelectorAll('.lang-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            document.querySelector(`button[onclick="switchLanguage('${current}')"]`)?.classList.add('active');
+        }
+        
+        async function testGET() {
+            log('🔄 Envoi GET request...', 'info');
+            try {
+                const response = await fetch(API_URL);
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(`✅ GET réussi [${response.status}]`, 'success');
+                    log(`Langue actuelle: ${data.language}`, 'success');
+                    log(`Langues supportées: ${data.supported_languages.join(', ')}`, 'success');
+                    updateLanguageButtons(data.language);
+                } else {
+                    log(`❌ Erreur [${response.status}]: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Erreur réseau: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testPUT(language) {
+            log(`🔄 Envoi PUT request (language: ${language})...`, 'info');
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({language})
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(`✅ PUT réussi [${response.status}]`, 'success');
+                    log(`${data.message}`, 'success');
+                    updateLanguageButtons(language);
+                } else {
+                    log(`❌ Erreur [${response.status}]: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Erreur réseau: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testPOST(language) {
+            log(`🔄 Envoi POST request (language: ${language})...`, 'info');
+            try {
+                const formData = new FormData();
+                formData.append('language', language);
+                
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log(`✅ POST réussi [${response.status}]`, 'success');
+                    log(`${data.message}`, 'success');
+                    updateLanguageButtons(language);
+                } else {
+                    log(`❌ Erreur [${response.status}]: ${data.error}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Erreur réseau: ${error.message}`, 'error');
+            }
+        }
+        
+        async function switchLanguage(language) {
+            await testPUT(language);
+        }
+        
+        async function testInvalidLanguage() {
+            log(`🔄 Test avec langue invalide (xyz)...`, 'info');
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({language: 'xyz'})
+                });
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    log(`✅ Erreur correctement détectée [${response.status}]`, 'success');
+                    log(`Message: ${data.error}`, 'success');
+                } else {
+                    log(`❌ L'erreur n'a pas été détectée`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Erreur réseau: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testInvalidJSON() {
+            log(`🔄 Test avec JSON invalide...`, 'info');
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'PUT',
+                    headers: {'Content-Type': 'application/json'},
+                    body: 'INVALID JSON'
+                });
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    log(`✅ Erreur correctement détectée [${response.status}]`, 'success');
+                    log(`Message: ${data.error}`, 'success');
+                } else {
+                    log(`❌ L'erreur n'a pas été détectée`, 'error');
+                }
+            } catch (error) {
+                log(`❌ Erreur réseau: ${error.message}`, 'error');
+            }
+        }
+        
+        // Charger la langue actuelle au démarrage
+        window.addEventListener('load', () => {
+            log('🚀 Page chargée, récupération de la langue actuelle...', 'info');
+            testGET();
+        });
+    </script>
+</body>
+</html>

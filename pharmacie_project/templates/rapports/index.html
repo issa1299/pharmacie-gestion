@@ -1,0 +1,476 @@
+{% extends 'base.html' %}
+{% block title %}Rapports - PharmaGest{% endblock %}
+{% block page_title %}Rapports & Statistiques{% endblock %}
+
+{% block extra_css %}
+<style>
+.report-filter {
+  background:#fff;
+  border-radius:10px;
+  box-shadow:0 2px 12px rgba(0,0,0,.07);
+  padding:15px 20px;
+  margin-bottom:20px;
+}
+.report-card {
+  background:#fff;
+  border-radius:10px;
+  box-shadow:0 2px 12px rgba(0,0,0,.07);
+  padding:18px 20px;
+  height:100%;
+}
+.report-card-header {
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin-bottom:14px;
+}
+.report-title {
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin:0;
+  font-size:14px;
+  font-weight:700;
+}
+.stat-card {
+  background:#fff;
+  border-radius:10px;
+  box-shadow:0 2px 12px rgba(0,0,0,.07);
+  padding:18px 20px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  min-height:94px;
+}
+.stat-icon {
+  width:48px;
+  height:48px;
+  border-radius:12px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:22px;
+  flex-shrink:0;
+}
+.stat-label { font-size:12px; color:#777; font-weight:600; }
+.stat-value { font-size:23px; font-weight:800; color:#1A1A1A; line-height:1.1; }
+.stat-note { font-size:12px; margin-top:4px; color:#888; }
+.stat-note.positive { color:#168754; }
+.stat-note.negative { color:#C0392B; }
+.section-band {
+  margin:24px 0 12px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
+.section-band h4 {
+  margin:0;
+  font-size:15px;
+  font-weight:800;
+  color:#222;
+}
+.section-band span {
+  color:#888;
+  font-size:12px;
+}
+.metric-row {
+  display:grid;
+  grid-template-columns:1fr auto;
+  align-items:center;
+  gap:10px;
+  padding:10px 0;
+  border-bottom:1px solid #F0F2F1;
+}
+.metric-row:last-child { border-bottom:0; }
+.metric-label { color:#666; font-size:13px; }
+.metric-value { font-weight:800; color:#1A1A1A; }
+.badge-soft {
+  border-radius:999px;
+  padding:5px 9px;
+  font-size:12px;
+  font-weight:700;
+}
+.badge-danger-soft { background:#FFF2F2; color:#C0392B; }
+.badge-warning-soft { background:#FFF8E8; color:#8A5A00; }
+.badge-success-soft { background:#E8F5F0; color:#0F6E56; }
+.badge-info-soft { background:#EAF3FF; color:#185FA5; }
+.mini-empty {
+  padding:24px 10px;
+  text-align:center;
+  color:#9A9A9A;
+  font-size:13px;
+}
+.chart-wrap { height:260px; }
+.chart-wrap-sm { height:220px; }
+.table td, .table th { vertical-align:middle; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="report-filter">
+  <div class="row g-3 align-items-end">
+    <div class="col-12 col-md-3">
+      <label class="form-label fw-semibold" style="font-size:12px;">Début</label>
+      <input type="date" id="date_debut" class="form-control" value="{{ date_debut }}">
+    </div>
+    <div class="col-12 col-md-3">
+      <label class="form-label fw-semibold" style="font-size:12px;">Fin</label>
+      <input type="date" id="date_fin" class="form-control" value="{{ date_fin }}">
+    </div>
+    <div class="col-12 col-md-6">
+      <button class="btn btn-primary me-2" onclick="appliquerFiltres()">
+        <i class="bi bi-funnel me-2"></i>Appliquer
+      </button>
+      <button class="btn btn-outline-secondary me-2" onclick="exporterPDF()">
+        <i class="bi bi-file-pdf me-2"></i>Exporter PDF
+      </button>
+      <button class="btn btn-outline-secondary" onclick="reinitialiserFiltres()">
+        <i class="bi bi-arrow-clockwise me-2"></i>Réinitialiser
+      </button>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 mb-4">
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:var(--primary-bg); color:var(--primary);"><i class="bi bi-receipt"></i></div>
+      <div>
+        <div class="stat-label">Ventes période</div>
+        <div class="stat-value">{{ total_ventes_mois }}</div>
+        <div class="stat-note {% if variation_ventes >= 0 %}positive{% else %}negative{% endif %}">
+          {{ variation_ventes|floatformat:1 }}% vs période précédente
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#EAF3DE; color:#3B6D11;"><i class="bi bi-cash-stack"></i></div>
+      <div>
+        <div class="stat-label">Chiffre d'affaires</div>
+        <div class="stat-value">{{ ca_mois|floatformat:0 }}</div>
+        <div class="stat-note">{{ site_params.devise }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#E6F1FB; color:#185FA5;"><i class="bi bi-graph-up-arrow"></i></div>
+      <div>
+        <div class="stat-label">Bénéfice estimé</div>
+        <div class="stat-value">{{ benefice_estime|floatformat:0 }}</div>
+        <div class="stat-note">{{ site_params.devise }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-xl-3">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#FAEEDA; color:#854F0B;"><i class="bi bi-box-seam"></i></div>
+      <div>
+        <div class="stat-label">Valeur stock</div>
+        <div class="stat-value">{{ valeur_stock|floatformat:0 }}</div>
+        <div class="stat-note">{{ total_medicaments }} médicaments</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section-band">
+  <h4>Rapport des ventes</h4>
+  <span>Suivi du chiffre d'affaires, des factures et des médicaments vendus</span>
+</div>
+<div class="row g-3">
+  <div class="col-12 col-xl-7">
+    <div class="report-card">
+      <div class="report-card-header">
+        <h5 class="report-title"><i class="bi bi-bar-chart-line" style="color:var(--primary);"></i>CA des 7 derniers jours</h5>
+      </div>
+      <div class="chart-wrap"><canvas id="chartCA"></canvas></div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-5">
+    <div class="report-card">
+      <div class="report-card-header">
+        <h5 class="report-title"><i class="bi bi-trophy" style="color:#3B6D11;"></i>Top médicaments vendus</h5>
+      </div>
+      <div class="chart-wrap"><canvas id="chartTop"></canvas></div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-6">
+    <div class="report-card">
+      <div class="report-card-header">
+        <h5 class="report-title"><i class="bi bi-pie-chart" style="color:#854F0B;"></i>CA par catégorie</h5>
+      </div>
+      <div class="chart-wrap-sm"><canvas id="chartCategorie"></canvas></div>
+    </div>
+  </div>
+  <div class="col-12 col-xl-6">
+    <div class="report-card">
+      <div class="report-card-header">
+        <h5 class="report-title"><i class="bi bi-clock-history"></i>Dernières ventes</h5>
+        <a href="{% url 'ventes:liste' %}" class="btn btn-outline-primary btn-sm">Voir tout</a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead><tr><th>Facture</th><th>Client</th><th>Total</th><th>Date</th></tr></thead>
+          <tbody>
+            {% for vente in dernieres_ventes %}
+            <tr>
+              <td style="font-family:monospace;font-size:12px;">{{ vente.numero_facture }}</td>
+              <td>{{ vente.client|default:"Anonyme" }}</td>
+              <td><strong>{{ vente.total|floatformat:0 }} {{ site_params.devise }}</strong></td>
+              <td style="font-size:12px;color:#777;">{{ vente.date_vente|date:site_params.format_date }} {{ vente.date_vente|date:"H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr><td colspan="4" class="mini-empty">Aucune vente sur cette période.</td></tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="section-band">
+  <h4>Rapport du stock</h4>
+  <span>Ruptures, stock faible et valeur actuelle</span>
+</div>
+<div class="row g-3">
+  <div class="col-12 col-lg-4">
+    <div class="report-card">
+      <h5 class="report-title mb-3"><i class="bi bi-clipboard-data" style="color:#185FA5;"></i>Synthèse stock</h5>
+      <div class="metric-row"><span class="metric-label">Médicaments enregistrés</span><span class="metric-value">{{ total_medicaments }}</span></div>
+      <div class="metric-row"><span class="metric-label">Stock faible</span><span class="metric-value">{{ stock_faible|length }}</span></div>
+      <div class="metric-row"><span class="metric-label">Ruptures</span><span class="metric-value">{{ stock_rupture|length }}</span></div>
+      <div class="metric-row"><span class="metric-label">Valeur stock</span><span class="metric-value">{{ valeur_stock|floatformat:0 }} {{ site_params.devise }}</span></div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-4">
+    <div class="report-card">
+      <div class="report-card-header">
+        <h5 class="report-title"><i class="bi bi-exclamation-triangle text-danger"></i>Stock faible</h5>
+        <a href="{% url 'stock:liste' %}" class="btn btn-outline-primary btn-sm">Stock</a>
+      </div>
+      {% for med in stock_faible %}
+      <div class="metric-row">
+        <span class="metric-label">{{ med.nom }}</span>
+        <span class="badge-soft badge-warning-soft">{{ med.quantite_stock }} / seuil {{ med.seuil_alerte }}</span>
+      </div>
+      {% empty %}
+      <div class="mini-empty">Aucun stock faible.</div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="col-12 col-lg-4">
+    <div class="report-card">
+      <h5 class="report-title mb-3"><i class="bi bi-x-octagon text-danger"></i>Ruptures</h5>
+      {% for med in stock_rupture %}
+      <div class="metric-row">
+        <span class="metric-label">{{ med.nom }}</span>
+        <span class="badge-soft badge-danger-soft">{{ med.quantite_stock }}</span>
+      </div>
+      {% empty %}
+      <div class="mini-empty">Aucune rupture.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="section-band">
+  <h4>Rapport des expirations</h4>
+  <span>Médicaments expirés, bientôt expirés et pertes estimées</span>
+</div>
+<div class="row g-3">
+  <div class="col-12 col-lg-4">
+    <div class="report-card">
+      <h5 class="report-title mb-3"><i class="bi bi-cash-coin" style="color:#C0392B;"></i>Pertes estimées</h5>
+      <div class="stat-value">{{ pertes_expiration|floatformat:0 }} {{ site_params.devise }}</div>
+      <div class="stat-note">Calculé avec prix d'achat × stock restant des produits expirés.</div>
+    </div>
+  </div>
+  <div class="col-12 col-lg-4">
+    <div class="report-card">
+      <h5 class="report-title mb-3"><i class="bi bi-calendar-x text-danger"></i>Déjà expirés</h5>
+      {% for med in medicaments_expires %}
+      <div class="metric-row"><span class="metric-label">{{ med.nom }}</span><span class="badge-soft badge-danger-soft">{{ med.date_expiration|date:site_params.format_date }}</span></div>
+      {% empty %}
+      <div class="mini-empty">Aucun médicament expiré.</div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="col-12 col-lg-4">
+    <div class="report-card">
+      <h5 class="report-title mb-3"><i class="bi bi-calendar-event" style="color:#854F0B;"></i>Expire bientôt</h5>
+      {% for med in medicaments_expirent_bientot %}
+      <div class="metric-row"><span class="metric-label">{{ med.nom }}</span><span class="badge-soft badge-warning-soft">{{ med.date_expiration|date:site_params.format_date }}</span></div>
+      {% empty %}
+      <div class="mini-empty">Aucun produit proche de l'expiration.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="section-band">
+  <h4>Rapport des mouvements</h4>
+  <span>Entrées, sorties et ajustements de stock</span>
+</div>
+<div class="row g-3">
+  <div class="col-12 col-lg-4">
+    <div class="report-card">
+      <h5 class="report-title mb-3"><i class="bi bi-arrow-left-right" style="color:var(--primary);"></i>Résumé mouvements</h5>
+      {% for m in mouvements_resume %}
+      <div class="metric-row">
+        <span class="metric-label">{{ m.type_mouvement|title }}</span>
+        <span class="metric-value">{{ m.total }} mouvement(s), {{ m.quantite }} unité(s)</span>
+      </div>
+      {% empty %}
+      <div class="mini-empty">Aucun mouvement sur cette période.</div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="col-12 col-lg-4">
+    <div class="report-card">
+      <div class="report-card-header">
+        <h5 class="report-title"><i class="bi bi-sliders" style="color:#185FA5;"></i>Ajustements</h5>
+        <a href="{% url 'stock:mouvements' %}" class="btn btn-outline-primary btn-sm">Mouvements</a>
+      </div>
+      {% for mouvement in ajustements %}
+      <div class="metric-row">
+        <span class="metric-label">{{ mouvement.medicament.nom }}</span>
+        <span class="badge-soft badge-info-soft">{{ mouvement.quantite }}</span>
+      </div>
+      {% empty %}
+      <div class="mini-empty">Aucun ajustement sur cette période.</div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="col-12 col-lg-4">
+    <div class="report-card">
+      <h5 class="report-title mb-3"><i class="bi bi-list-check"></i>Derniers mouvements</h5>
+      {% for mouvement in derniers_mouvements %}
+      <div class="metric-row">
+        <span class="metric-label">{{ mouvement.medicament.nom }}<br><small>{{ mouvement.get_type_mouvement_display }} - {{ mouvement.date|date:site_params.format_date }}</small></span>
+        <span class="metric-value">{{ mouvement.quantite }}</span>
+      </div>
+      {% empty %}
+      <div class="mini-empty">Aucun mouvement récent.</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<div class="section-band">
+  <h4>Rapport financier</h4>
+  <span>Chiffre d'affaires, coût d'achat vendu et marge estimée</span>
+</div>
+<div class="row g-3">
+  <div class="col-12 col-lg-4"><div class="report-card"><div class="metric-row"><span class="metric-label">Chiffre d'affaires</span><span class="metric-value">{{ ca_mois|floatformat:0 }} {{ site_params.devise }}</span></div></div></div>
+  <div class="col-12 col-lg-4"><div class="report-card"><div class="metric-row"><span class="metric-label">Coût d'achat vendu</span><span class="metric-value">{{ cout_achats_vendus|floatformat:0 }} {{ site_params.devise }}</span></div></div></div>
+  <div class="col-12 col-lg-4"><div class="report-card"><div class="metric-row"><span class="metric-label">Bénéfice estimé</span><span class="metric-value">{{ benefice_estime|floatformat:0 }} {{ site_params.devise }}</span></div></div></div>
+</div>
+
+<div class="section-band">
+  <h4>Rapport fournisseurs</h4>
+  <span>Liste et suivi des fournisseurs enregistrés</span>
+</div>
+<div class="report-card">
+  <div class="report-card-header">
+    <h5 class="report-title"><i class="bi bi-truck" style="color:#854F0B;"></i>Fournisseurs récents</h5>
+    <a href="{% url 'fournisseurs:liste' %}" class="btn btn-outline-primary btn-sm">Voir tout</a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead><tr><th>Nom</th><th>Téléphone</th><th>Email</th><th>Ajouté le</th></tr></thead>
+      <tbody>
+        {% for fournisseur in fournisseurs %}
+        <tr>
+          <td><strong>{{ fournisseur.nom }}</strong></td>
+          <td>{{ fournisseur.telephone|default:"-" }}</td>
+          <td>{{ fournisseur.email|default:"-" }}</td>
+          <td>{{ fournisseur.created_at|date:site_params.format_date }}</td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="4" class="mini-empty">Aucun fournisseur enregistré.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const labelsJours = {{ labels_jours|safe }};
+const caJours = {{ ca_jours|safe }};
+const labelsCat = {{ labels_cat|safe }};
+const caCat = {{ ca_cat|safe }};
+const topNoms = {{ top_noms|safe }};
+const topQtes = {{ top_qtes|safe }};
+
+new Chart(document.getElementById('chartCA'), {
+  type: 'bar',
+  data: {
+    labels: labelsJours,
+    datasets: [{
+      data: caJours,
+      backgroundColor: 'rgba(15,110,86,0.18)',
+      borderColor: '#0F6E56',
+      borderWidth: 2,
+      borderRadius: 6
+    }]
+  },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }
+});
+
+new Chart(document.getElementById('chartTop'), {
+  type: 'bar',
+  data: {
+    labels: topNoms,
+    datasets: [{
+      data: topQtes,
+      backgroundColor: 'rgba(59,109,17,0.18)',
+      borderColor: '#3B6D11',
+      borderWidth: 2,
+      borderRadius: 6
+    }]
+  },
+  options: { indexAxis:'y', responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}, scales:{x:{beginAtZero:true}} }
+});
+
+new Chart(document.getElementById('chartCategorie'), {
+  type: 'doughnut',
+  data: {
+    labels: labelsCat,
+    datasets: [{
+      data: caCat,
+      backgroundColor: ['#0F6E56','#185FA5','#854F0B','#3B6D11','#C0392B','#FFC107','#17A2B8','#6F42C1'],
+      borderColor: '#fff',
+      borderWidth: 2
+    }]
+  },
+  options: { responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom', labels:{boxWidth:12, font:{size:11}}}} }
+});
+
+function appliquerFiltres() {
+  const debut = document.getElementById('date_debut').value;
+  const fin = document.getElementById('date_fin').value;
+  if (debut && fin) {
+    window.location.href = `?date_debut=${debut}&date_fin=${fin}`;
+  }
+}
+
+function exporterPDF() {
+  const debut = document.getElementById('date_debut').value;
+  const fin = document.getElementById('date_fin').value;
+  window.location.href = `{% url 'rapports:export_pdf' %}?date_debut=${debut}&date_fin=${fin}`;
+}
+
+function reinitialiserFiltres() {
+  window.location.href = '{% url 'rapports:index' %}';
+}
+</script>
+{% endblock %}

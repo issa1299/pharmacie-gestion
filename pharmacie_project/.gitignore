@@ -1,0 +1,38 @@
+# Environnement
+.env
+.env.local
+.env.*.local
+venv/
+env/
+
+# Base de données
+db.sqlite3
+*.db
+
+# Cache et fichiers temporaires
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Media et fichiers uploadés
+media/
+uploads/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tests
+.coverage
+htmlcov/

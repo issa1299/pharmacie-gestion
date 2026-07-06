@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+{% block title %}Clients — PharmaGest{% endblock %}
+{% block page_title %}Clients{% endblock %}
+
+{% block content %}
+
+<div class="module-toolbar d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <form method="get" class="d-flex gap-2">
+    <input type="text" name="q" value="{{ q }}" placeholder="Rechercher un client..."
+           class="form-control" style="width:250px;">
+    <button type="submit" class="btn btn-outline-primary">
+      <i class="bi bi-search me-1"></i>Rechercher
+    </button>
+    {% if q %}
+    <a href="{% url 'clients:liste' %}" class="btn btn-outline-secondary">Réinitialiser</a>
+    {% endif %}
+  </form>
+  <a href="{% url 'clients:ajouter' %}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-1"></i>Ajouter un client
+  </a>
+</div>
+
+<div class="card module-card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Nom complet</th>
+          <th>Téléphone</th>
+          <th>Email</th>
+          <th>Date inscription</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for client in clients %}
+        <tr>
+          <td>
+            <div style="font-weight:500;">{{ client.nom }} {{ client.prenom }}</div>
+            {% if client.adresse %}
+            <div style="font-size:11px; color:#aaa;">{{ client.adresse }}</div>
+            {% endif %}
+          </td>
+          <td>{{ client.telephone|default:"—" }}</td>
+          <td style="font-size:13px; color:#888;">{{ client.email|default:"—" }}</td>
+          <td style="font-size:12px; color:#aaa;">{{ client.created_at|date:site_params.format_date }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{% url 'clients:modifier' client.pk %}"
+                 class="btn-icon" title="Modifier"
+                 style="width:30px;height:30px;font-size:14px;">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <a href="{% url 'clients:supprimer' client.pk %}"
+                 class="btn-icon" title="Supprimer"
+                 style="width:30px;height:30px;font-size:14px;color:#E24B4A;">
+                <i class="bi bi-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="module-empty text-center py-5">
+            <i class="bi bi-people fs-2 d-block mb-2"></i>
+            Aucun client enregistré.
+            <a href="{% url 'clients:ajouter' %}">Ajouter le premier ?</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

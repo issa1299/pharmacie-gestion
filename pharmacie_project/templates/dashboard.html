@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+
+{% block title %}Tableau de bord — PharmaGest{% endblock %}
+{% block page_title %}Tableau de bord{% endblock %}
+
+{% block content %}
+
+<!-- ── CARTES STATISTIQUES ───────────────────── -->
+<div class="row g-3 mb-4">
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:var(--primary-bg); color:var(--primary);">
+        <i class="bi bi-capsule-pill"></i>
+      </div>
+      <div>
+        <div class="stat-label">Médicaments</div>
+        <div class="stat-value">{{ total_medicaments }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#E6F1FB; color:#185FA5;">
+        <i class="bi bi-receipt"></i>
+      </div>
+      <div>
+        <div class="stat-label">Ventes aujourd'hui</div>
+        <div class="stat-value">{{ ventes_jour }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#FFF4F4; color:#C0392B;">
+        <i class="bi bi-exclamation-triangle"></i>
+      </div>
+      <div>
+        <div class="stat-label">Stock faible</div>
+        <div class="stat-value">{{ stock_faible }}</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="stat-card">
+      <div class="stat-icon" style="background:#FAEEDA; color:#854F0B;">
+        <i class="bi bi-cash-stack"></i>
+      </div>
+      <div>
+        <div class="stat-label">CA du jour ({{ site_params.devise }})</div>
+        <div class="stat-value">{{ ca_jour|floatformat:2 }}</div>
+      </div>
+    </div>
+  </div>
+
+
+
+
+</div>
+
+
+<!-- ── ALERTES ────────────────────────────────── -->
+{% if medicaments_stock_faible %}
+<div class="alert-stock p-3 mb-4 d-flex align-items-center gap-2">
+  <i class="bi bi-exclamation-circle-fill fs-5"></i>
+  <div>
+    <strong>{{ medicaments_stock_faible|length }} médicament(s) en stock faible !</strong>
+    Pensez à passer commande auprès de vos fournisseurs.
+    <a href="{% url 'stock:liste' %}" class="ms-2 fw-semibold" style="color:inherit;">Voir le stock →</a>
+  </div>
+</div>
+{% endif %}
+
+{% if medicaments_expires %}
+<div class="alert-expire p-3 mb-4 d-flex align-items-center gap-2">
+  <i class="bi bi-clock-history fs-5"></i>
+  <div>
+    <strong>{{ medicaments_expires|length }} médicament(s) expiré(s) ou bientôt expirés !</strong>
+    <a href="{% url 'medicaments:liste' %}" class="ms-2 fw-semibold" style="color:inherit;">Voir la liste →</a>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── CONTENU EN 2 COLONNES ──────────────────── -->
+<div class="row g-3">
+
+  <!-- Dernières ventes -->
+  <div class="col-12 col-lg-7">
+    <div class="card">
+      <div class="card-header-custom">
+        <h5><i class="bi bi-receipt me-2 text-success"></i>Dernières ventes</h5>
+        <a href="{% url 'ventes:nouvelle' %}" class="btn btn-primary btn-sm">
+          <i class="bi bi-plus-lg me-1"></i>Nouvelle vente
+        </a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>N° Facture</th>
+              <th>Client</th>
+              <th>Total</th>
+              <th>Date</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for vente in dernieres_ventes %}
+            <tr>
+              <td><span style="font-family:'DM Mono',monospace; font-size:12px;">{{ vente.numero_facture }}</span></td>
+              <td>{{ vente.client.nom|default:"Client anonyme" }}</td>
+              <td><strong>{{ vente.total }} {{ site_params.devise }}</strong></td>
+              <td style="color:#888; font-size:12px;">{{ vente.date_vente|date:site_params.format_date }} {{ vente.date_vente|date:"H:i" }}</td>
+              <td>
+                <a href="{% url 'ventes:detail' vente.pk %}" class="btn-icon" style="width:28px;height:28px;font-size:13px;">
+                  <i class="bi bi-eye"></i>
+                </a>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="5" class="text-center py-4" style="color:#aaa;">
+                <i class="bi bi-receipt fs-3 d-block mb-2"></i>
+                Aucune vente enregistrée aujourd'hui
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stock faible -->
+  <div class="col-12 col-lg-5">
+    <div class="card">
+      <div class="card-header-custom">
+        <h5><i class="bi bi-boxes me-2 text-danger"></i>Stock faible</h5>
+        <a href="{% url 'stock:mouvements' %}" class="btn btn-outline-primary btn-sm">
+          Gérer
+        </a>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Médicament</th>
+              <th>Stock</th>
+              <th>Seuil</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for med in medicaments_stock_faible|slice:":8" %}
+            <tr>
+              <td>
+                <span style="font-weight:500;">{{ med.nom }}</span>
+                <div style="font-size:11px; color:#aaa;">{{ med.categorie }}</div>
+              </td>
+              <td>
+                <span class="badge badge-stock-low px-2 py-1 rounded-2">
+                  {{ med.quantite_stock }}
+                </span>
+              </td>
+              <td style="color:#aaa; font-size:13px;">{{ med.seuil_alerte }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="3" class="text-center py-4" style="color:#aaa;">
+                <i class="bi bi-check-circle fs-3 d-block mb-2 text-success"></i>
+                Tous les stocks sont suffisants
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+{% endblock %}

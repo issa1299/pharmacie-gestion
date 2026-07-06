@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion - {{ site_params.nom_pharmacie|default:"PharmaGest" }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    :root {
+      --primary: {{ site_params.couleur|default:'#0F6E56' }};
+      --primary-light: color-mix(in srgb, var(--primary) 78%, white);
+      --primary-bg: color-mix(in srgb, var(--primary) 12%, white);
+    }
+    body { min-height: 100vh; background: #F4F6F5; font-family: 'DM Sans', Arial, sans-serif; }
+    .auth-card { width: min(410px, calc(100vw - 32px)); border: none; border-radius: 12px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+    .brand-mark { width: 54px; height: 54px; border-radius: 14px; background: var(--primary-light); color: #fff; display: flex; align-items: center; justify-content: center; margin: 0 auto 12px; font-size: 25px; overflow: hidden; }
+    .brand-mark img { width: 100%; height: 100%; object-fit: cover; }
+    .brand-title { color: var(--primary); font-weight: 700; }
+    .btn-primary { background: var(--primary); border-color: var(--primary); }
+    .btn-primary:hover { background: var(--primary-light); border-color: var(--primary-light); }
+    .form-control:focus { border-color: var(--primary-light); box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent); }
+    a { color: var(--primary); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+  </style>
+</head>
+<body>
+  <main class="d-flex justify-content-center align-items-center min-vh-100 py-4">
+    <div class="card auth-card p-4">
+      <div class="text-center mb-4">
+        <div class="brand-mark">
+          {% if site_params.logo %}
+          <img src="{{ site_params.logo.url }}" alt="Logo">
+          {% else %}
+          <i class="bi bi-capsule"></i>
+          {% endif %}
+        </div>
+        <h4 class="brand-title mb-1">{{ site_params.nom_pharmacie|default:"PharmaGest" }}</h4>
+        <p class="text-muted small mb-0">Connectez-vous pour continuer</p>
+      </div>
+
+      {% if form.errors %}
+      <div class="alert alert-danger py-2 small">Identifiants incorrects. Verifiez puis reessayez.</div>
+      {% endif %}
+
+      {% if messages %}
+      {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }} py-2 small">{{ message }}</div>
+      {% endfor %}
+      {% endif %}
+
+      <form method="post" action="{% url 'account_login' %}">
+        {% csrf_token %}
+        {% if redirect_field_value %}
+        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}">
+        {% endif %}
+
+        <div class="mb-3">
+          <label for="id_login" class="form-label fw-semibold">Nom d'utilisateur ou email</label>
+          <input type="text" name="login" id="id_login" class="form-control" autocomplete="username" required autofocus>
+        </div>
+        <div class="mb-3">
+          <label for="id_password" class="form-label fw-semibold">Mot de passe</label>
+          <input type="password" name="password" id="id_password" class="form-control" autocomplete="current-password" required>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+          <label class="form-check-label small">
+            <input type="checkbox" name="remember" class="form-check-input me-1"> Se souvenir de moi
+          </label>
+          <a href="{% url 'accounts:sms_password_reset' %}" class="small">Mot de passe oublie ?</a>
+        </div>
+        <button type="submit" class="btn btn-primary w-100 py-2">Se connecter</button>
+      </form>
+
+      <p class="text-center small text-muted mt-4 mb-0">
+        Pas encore de compte ? <a href="{% url 'account_signup' %}">Creer un compte</a>
+      </p>
+    </div>
+  </main>
+</body>
+</html>

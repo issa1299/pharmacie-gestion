@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% block title %}Médicaments — PharmaGest{% endblock %}
+{% block page_title %}Médicaments{% endblock %}
+
+{% block content %}
+
+<!-- En-tête avec recherche -->
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <form method="get" class="d-flex gap-2 flex-wrap">
+    <input type="text" name="q" value="{{ q }}" placeholder="Rechercher un médicament..."
+           class="form-control" style="width:220px;">
+    <select name="categorie" class="form-select" style="width:160px;">
+      <option value="">Toutes les catégories</option>
+      {% for cat in categories %}
+      <option value="{{ cat.id }}" {% if categorie_id == cat.id|stringformat:"s" %}selected{% endif %}>
+        {{ cat.nom }}
+      </option>
+      {% endfor %}
+    </select>
+    <select name="etagere" class="form-select" style="width:160px;">
+      <option value="">Toutes les étagères</option>
+      {% for et in etageres %}
+      <option value="{{ et.id }}" {% if etagere_id == et.id|stringformat:"s" %}selected{% endif %}>
+        {{ et.code }} — {{ et.nom }}
+      </option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-outline-primary">
+      <i class="bi bi-search me-1"></i>Filtrer
+    </button>
+    {% if q or categorie_id or etagere_id %}
+    <a href="{% url 'medicaments:liste' %}" class="btn btn-outline-secondary">Réinitialiser</a>
+    {% endif %}
+  </form>
+  <a href="{% url 'medicaments:ajouter' %}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-1"></i>Ajouter
+  </a>
+</div>
+
+<!-- Tableau -->
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Médicament</th>
+          <th>Catégorie</th>
+          <th>Étagère</th>
+          <th>Prix vente</th>
+          <th>Stock</th>
+          <th>Expiration</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for med in medicaments %}
+        <tr>
+          <td>
+            <div style="font-weight:500;">{{ med.nom }}</div>
+            {% if med.code_barre %}
+            <div style="font-size:11px; color:#aaa; font-family:monospace;">{{ med.code_barre }}</div>
+            {% endif %}
+          </td>
+          <td>{{ med.categorie|default:"—" }}</td>
+          <td>
+            {% if med.etagere %}
+            <div style="display:inline-flex; align-items:center; gap:7px;
+                        background:{{ med.etagere.couleur }}1A;
+                        padding:4px 10px 4px 6px; border-radius:8px;">
+              <div style="width:20px; height:20px; border-radius:5px;
+                          background:{{ med.etagere.couleur }};
+                          display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+                <i class="bi {{ med.etagere.icone }}" style="font-size:11px; color:#fff;"></i>
+              </div>
+              <div style="line-height:1.2;">
+                <div style="font-size:12px; font-weight:600; color:{{ med.etagere.couleur }};">
+                  {{ med.etagere.code }}
+                </div>
+                <div style="font-size:10px; color:{{ med.etagere.couleur }}; opacity:0.75;">
+                  {{ med.etagere.nom }}
+                </div>
+              </div>
+            </div>
+            {% else %}
+            <span style="color:#bbb; font-size:12px;">Non assignée</span>
+            {% endif %}
+          </td>
+          <td><strong>{{ med.prix_vente }} FCFA</strong></td>
+          <td>
+            {% if med.stock_faible %}
+            <span class="badge badge-stock-low px-2 py-1 rounded-2">
+              <i class="bi bi-exclamation-triangle me-1"></i>{{ med.quantite_stock }}
+            </span>
+            {% else %}
+            <span class="badge badge-stock-ok px-2 py-1 rounded-2">
+              {{ med.quantite_stock }}
+            </span>
+            {% endif %}
+          </td>
+          <td>
+            {% if med.est_expire %}
+            <span class="badge badge-expire px-2 py-1 rounded-2">
+              Expiré {{ med.date_expiration }}
+            </span>
+            {% else %}
+            <span style="font-size:13px; color:#888;">{{ med.date_expiration|default:"—" }}</span>
+            {% endif %}
+          </td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{% url 'medicaments:modifier' med.pk %}"
+                 class="btn-icon" title="Modifier" style="width:30px;height:30px;font-size:14px;">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <a href="{% url 'medicaments:supprimer' med.pk %}"
+                 class="btn-icon" title="Supprimer"
+                 style="width:30px;height:30px;font-size:14px;color:#E24B4A;">
+                <i class="bi bi-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="7" class="text-center py-5" style="color:#aaa;">
+            <i class="bi bi-capsule fs-2 d-block mb-2"></i>
+            Aucun médicament trouvé.
+            <a href="{% url 'medicaments:ajouter' %}">Ajouter le premier ?</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

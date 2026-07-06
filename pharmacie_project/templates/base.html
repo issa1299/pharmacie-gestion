@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="{{ langue|default:'fr' }}">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{% block title %}PharmaGest{% endblock %}</title>
+
+  <!-- Bootstrap 5 -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+  <style>
+    :root {
+      --primary:       {{ site_params.couleur|default:'#0F6E56' }};
+      --primary-light: color-mix(in srgb, var(--primary) 78%, white);
+      --primary-dark:  color-mix(in srgb, var(--primary) 58%, black);
+      --primary-bg:    color-mix(in srgb, var(--primary) 12%, white);
+      --sidebar-w:     240px;
+      --topbar-h:      60px;
+      --radius:        10px;
+      --shadow:        0 2px 12px rgba(0,0,0,.07);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: #F4F6F5;
+      margin: 0;
+      color: #1A1A1A;
+    }
+
+    /* ── SIDEBAR ─────────────────────────────────── */
+    .sidebar {
+      position: fixed;
+      top: 0; left: 0;
+      width: var(--sidebar-w);
+      height: 100vh;
+      background: var(--primary-dark);
+      display: flex;
+      flex-direction: column;
+      z-index: 100;
+      transition: transform 0.3s ease;
+    }
+
+    .sidebar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .sidebar-logo .logo-icon {
+      width: 36px; height: 36px;
+      background: var(--primary-light);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: #fff;
+      flex-shrink: 0;
+    }
+    .sidebar-logo .logo-text {
+      font-size: 17px; font-weight: 700;
+      color: #fff; letter-spacing: -0.3px;
+    }
+    .sidebar-logo .logo-sub {
+      font-size: 10px; color: rgba(255,255,255,.45);
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+
+    .sidebar-nav {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 0;
+    }
+    .sidebar-nav::-webkit-scrollbar { width: 4px; }
+    .sidebar-nav::-webkit-scrollbar-thumb { background: rgba(255,255,255,.15); border-radius: 4px; }
+
+    .nav-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.35);
+      padding: 12px 20px 4px;
+    }
+
+    .nav-link-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 20px;
+      color: rgba(255,255,255,.65);
+      text-decoration: none;
+      font-size: 13.5px;
+      font-weight: 500;
+      border-radius: 0;
+      transition: background 0.15s, color 0.15s;
+      position: relative;
+    }
+    .nav-link-item i { font-size: 16px; flex-shrink: 0; }
+    .nav-link-item:hover {
+      background: rgba(255,255,255,.07);
+      color: #fff;
+    }
+    .nav-link-item.active {
+      background: color-mix(in srgb, var(--primary) 25%, transparent);
+      color: #fff;
+    }
+    .nav-link-item.active::before {
+      content: '';
+      position: absolute;
+      left: 0; top: 6px; bottom: 6px;
+      width: 3px;
+      background: var(--primary-light);
+      border-radius: 0 3px 3px 0;
+    }
+
+    .sidebar-footer {
+      padding: 14px 20px;
+      border-top: 1px solid rgba(255,255,255,.08);
+    }
+    .sidebar-user {
+      display: flex; align-items: center; gap: 10px;
+    }
+    .sidebar-user .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--primary-light);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 700; color: #fff;
+      flex-shrink: 0;
+    }
+    .sidebar-user .user-name { font-size: 13px; font-weight: 600; color: #fff; }
+    .sidebar-user .user-role { font-size: 11px; color: rgba(255,255,255,.45); }
+    .logout-btn {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 10px; padding: 7px 12px;
+      background: rgba(255,255,255,.07);
+      border-radius: 8px;
+      color: rgba(255,255,255,.55);
+      text-decoration: none;
+      font-size: 12.5px;
+      transition: background 0.15s, color 0.15s;
+    }
+    .logout-btn:hover { background: rgba(255,60,60,.2); color: #ff8080; }
+
+    /* ── TOPBAR ──────────────────────────────────── */
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: var(--sidebar-w);
+      right: 0;
+      height: var(--topbar-h);
+      background: #fff;
+      border-bottom: 1px solid #E8EBE9;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 99;
+      box-shadow: 0 1px 6px rgba(0,0,0,.04);
+    }
+    .topbar-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #1A1A1A;
+    }
+    .topbar-right { display: flex; align-items: center; gap: 12px; }
+
+    .btn-icon {
+      width: 34px; height: 34px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 8px;
+      background: #F4F6F5;
+      border: none; cursor: pointer;
+      color: #555;
+      font-size: 16px;
+      transition: background 0.15s;
+      text-decoration: none;
+    }
+    .btn-icon:hover { background: var(--primary-bg); color: var(--primary); }
+
+    .badge-alert {
+      position: relative;
+    }
+    .badge-alert::after {
+      content: '';
+      position: absolute;
+      top: 5px; right: 5px;
+      width: 7px; height: 7px;
+      background: #E24B4A;
+      border-radius: 50%;
+      border: 1.5px solid #fff;
+    }
+
+    .alert-menu {
+      width: 320px;
+      padding: 10px;
+      border: 1px solid #E8EBE9;
+      box-shadow: 0 12px 32px rgba(0,0,0,.12);
+      border-radius: 10px;
+    }
+    .alert-menu-title {
+      font-size: 12px;
+      font-weight: 700;
+      color: #1A1A1A;
+      margin: 2px 4px 8px;
+    }
+    .alert-menu-item {
+      display: block;
+      padding: 8px 9px;
+      border-radius: 8px;
+      color: #333;
+      text-decoration: none;
+      font-size: 12.5px;
+    }
+    .alert-menu-item:hover {
+      background: #F4F6F5;
+      color: var(--primary);
+    }
+    .alert-menu-item small {
+      display: block;
+      color: #888;
+      margin-top: 2px;
+    }
+
+    /* ── MAIN CONTENT ────────────────────────────── */
+    .main-content {
+      margin-left: var(--sidebar-w);
+      margin-top: var(--topbar-h);
+      padding: 24px;
+      min-height: calc(100vh - var(--topbar-h));
+    }
+
+    /* ── CARDS ───────────────────────────────────── */
+    .card {
+      border: none;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      background: #fff;
+    }
+    .card-header-custom {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid #F0F2F1;
+    }
+    .card-header-custom h5 {
+      font-size: 14px; font-weight: 600; margin: 0;
+      color: #1A1A1A;
+    }
+
+    /* ── STAT CARDS ──────────────────────────────── */
+    .stat-card {
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px 20px;
+      display: flex; align-items: center; gap: 14px;
+    }
+    .stat-icon {
+      width: 46px; height: 46px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+    .stat-label { font-size: 12px; color: #888; font-weight: 500; }
+    .stat-value { font-size: 22px; font-weight: 700; color: #1A1A1A; line-height: 1.1; }
+
+    /* ── ALERTS ──────────────────────────────────── */
+    .alert-stock {
+      background: #FFF4F4; border: 1px solid #FFC5C5;
+      border-radius: var(--radius);
+      color: #C0392B;
+      font-size: 13px;
+    }
+    .alert-expire {
+      background: #FFF8EE; border: 1px solid #FFCC80;
+      border-radius: var(--radius);
+      color: #E65100;
+      font-size: 13px;
+    }
+
+    /* ── TABLES ──────────────────────────────────── */
+    .table { font-size: 13.5px; }
+    .table th {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #888;
+      border-bottom: 2px solid #F0F2F1;
+      padding: 10px 14px;
+    }
+    .table td { padding: 11px 14px; vertical-align: middle; }
+    .table tbody tr:hover { background: #F9FBF9; }
+
+    /* ── BADGES ──────────────────────────────────── */
+    .badge-stock-ok   { background: #E8F5F0; color: var(--primary); }
+    .badge-stock-low  { background: #FFF4F4; color: #C0392B; }
+    .badge-expire     { background: #FFF8EE; color: #E65100; }
+
+    /* Modules hors ventes */
+    .module-toolbar {
+      background: #fff;
+      border: 1px solid #E7ECE9;
+      border-radius: 10px;
+      padding: 12px;
+      box-shadow: 0 1px 8px rgba(15, 64, 51, .05);
+    }
+    .module-card {
+      border: 1px solid #E4EBE8;
+      border-radius: 8px;
+      box-shadow: 0 8px 24px rgba(15, 64, 51, .07);
+      overflow: hidden;
+    }
+    .module-card .card-header-custom {
+      background: #FBFCFC;
+      border-bottom: 1px solid #E9EFEC;
+      padding: 14px 18px;
+    }
+    .module-card .card-header-custom h5 {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 14px;
+    }
+    .module-card .table th {
+      background: #F8FAF9;
+      color: #60716B;
+    }
+    .module-card .table td {
+      border-color: #EEF2F0;
+    }
+    .module-card .table tbody tr:hover {
+      background: #F5FAF8;
+    }
+    .module-card .btn-icon {
+      border: 1px solid #E8EEEB;
+      background: #fff;
+    }
+    .module-card .btn-icon:hover {
+      background: var(--primary-bg);
+      border-color: #CBE5DC;
+    }
+    .module-badge {
+      border-radius: 999px !important;
+      padding: 5px 10px !important;
+      font-weight: 600;
+    }
+    .module-alert {
+      background: #FFF7F7;
+      border: 1px solid #FFD3D3;
+      border-left: 4px solid #C0392B;
+      border-radius: 8px;
+      padding: 12px 16px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .module-empty {
+      color: #98A39F;
+      background: #FBFCFC;
+    }
+
+    /* ── BUTTONS ─────────────────────────────────── */
+    .btn-primary {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+    .btn-primary:hover {
+      background: var(--primary-light);
+      border-color: var(--primary-light);
+    }
+    .btn-outline-primary {
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    .btn-outline-primary:hover {
+      background: var(--primary);
+      border-color: var(--primary);
+    }
+
+    /* ── FORMS ───────────────────────────────────── */
+    .form-control:focus, .form-select:focus {
+      border-color: var(--primary-light);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+    }
+
+    /* ── MESSAGES DJANGO ─────────────────────────── */
+    .django-messages { margin-bottom: 16px; }
+
+    /* ── RESPONSIVE ──────────────────────────────── */
+    @media (max-width: 768px) {
+      .sidebar { transform: translateX(-100%); }
+      .sidebar.open { transform: translateX(0); }
+      .topbar, .main-content { left: 0; margin-left: 0; }
+      .alert-menu { width: min(320px, calc(100vw - 24px)); }
+    }
+  </style>
+
+  {% block extra_css %}{% endblock %}
+</head>
+
+<body>
+
+<!-- ═══════════════════════════════════════════════
+     SIDEBAR
+════════════════════════════════════════════════ -->
+<aside class="sidebar" id="sidebar">
+
+  <div class="sidebar-logo">
+      <div class="logo-icon">
+        {% if site_params.logo %}
+        <img src="{{ site_params.logo.url }}" alt="Logo" style="width:100%;height:100%;object-fit:cover;border-radius:9px;">
+        {% else %}
+        <i class="bi bi-capsule"></i>
+        {% endif %}
+      </div>
+    <div>
+      <div class="logo-text">{{ site_params.nom_pharmacie|default:"PharmaGest" }}</div>
+      <div class="logo-sub">{{ site_params.slogan|default:"Gestion de pharmacie" }}</div>
+    </div>
+  </div>
+
+  <nav class="sidebar-nav">
+
+    <div class="nav-section-label">{{ t.principal }}</div>
+    <a href="{% url 'dashboard' %}"
+       class="nav-link-item {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+      <i class="bi bi-grid"></i> {{ t.tableau_de_bord }}
+    </a>
+
+    <div class="nav-section-label">{{ t.ventes }}</div>
+    <a href="{% url 'ventes:nouvelle' %}"
+       class="nav-link-item {% if request.resolver_match.url_name == 'nouvelle' %}active{% endif %}">
+      <i class="bi bi-plus-circle"></i> {{ t.nouvelle_vente }}
+    </a>
+    <a href="{% url 'ventes:liste' %}"
+       class="nav-link-item {% if 'ventes' in request.resolver_match.namespace %}active{% endif %}">
+      <i class="bi bi-receipt"></i> {{ t.historique_ventes }}
+    </a>
+
+    <div class="nav-section-label">{{ t.catalogue }}</div>
+    <a href="{% url 'medicaments:liste' %}"
+       class="nav-link-item {% if 'medicaments' in request.resolver_match.namespace %}active{% endif %}">
+      <i class="bi bi-capsule-pill"></i> {{ t.medicaments }}
+    </a>
+
+    {% if is_pharmacien_or_more %}
+    <a href="{% url 'medicaments:categories' %}"
+       class="nav-link-item {% if request.resolver_match.url_name == 'categories' %}active{% endif %}">
+      <i class="bi bi-tag"></i> {{ t.categories }}
+    </a>
+    <a href="{% url 'medicaments:etageres' %}"
+       class="nav-link-item {% if 'etageres' in request.resolver_match.namespace %}active{% endif %}">
+      <i class="bi bi-stack"></i> Étagères
+    </a>
+
+    <div class="nav-section-label">{{ t.stock }}</div>
+    <a href="{% url 'stock:liste' %}"
+       class="nav-link-item {% if 'stock' in request.resolver_match.namespace %}active{% endif %}">
+      <i class="bi bi-boxes"></i> {{ t.etat_du_stock }}
+    </a>
+    <a href="{% url 'stock:mouvements' %}"
+       class="nav-link-item {% if request.resolver_match.url_name == 'mouvements' %}active{% endif %}">
+      <i class="bi bi-arrow-left-right"></i> {{ t.mouvements }}
+    </a>
+    {% endif %}
+
+    <div class="nav-section-label">{{ t.gestion }}</div>
+    <a href="{% url 'clients:liste' %}"
+       class="nav-link-item {% if 'clients' in request.resolver_match.namespace %}active{% endif %}">
+      <i class="bi bi-people"></i> {{ t.clients }}
+    </a>
+
+    {% if is_pharmacien_or_more %}
+    <a href="{% url 'fournisseurs:liste' %}"
+       class="nav-link-item {% if 'fournisseurs' in request.resolver_match.namespace %}active{% endif %}">
+      <i class="bi bi-truck"></i> {{ t.fournisseurs }}
+    </a>
+
+    <div class="nav-section-label">{{ t.rapports }}</div>
+    <a href="{% url 'rapports:index' %}"
+       class="nav-link-item {% if 'rapports' in request.resolver_match.namespace %}active{% endif %}">
+      <i class="bi bi-bar-chart-line"></i> {{ t.statistiques }}
+    </a>
+    {% endif %}
+
+    {% if is_patron %}
+    <div class="nav-section-label">{{ t.administration }}</div>
+    <a href="{% url 'accounts:utilisateurs' %}"
+       class="nav-link-item {% if 'accounts' in request.resolver_match.namespace %}active{% endif %}">
+      <i class="bi bi-shield-check"></i> {{ t.utilisateurs }}
+    </a>
+    <a href="{% url 'parametres:index' %}"
+       class="nav-link-item {% if 'parametres' in request.resolver_match.namespace %}active{% endif %}">
+      <i class="bi bi-gear"></i> {{ t.parametres }}
+    </a>
+    {% endif %}
+
+  </nav>
+
+
+  <div class="sidebar-footer">
+    <div class="sidebar-user">
+      <div class="avatar">{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}</div>
+      <div>
+        <div class="user-name">{{ user.get_full_name|default:user.username }}</div>
+        <div class="user-role">{{ role_label }}</div>
+      </div>
+    </div>
+    <form method="post" action="{% url 'account_logout' %}">
+    {% csrf_token %}
+    <button type="submit" class="logout-btn" style="width:100%; border:none; cursor:pointer;">
+        <i class="bi bi-box-arrow-right"></i> {{ t.deconnexion }}
+    </button>
+</form>
+  </div>
+
+</aside>
+
+<!-- ═══════════════════════════════════════════════
+     TOPBAR
+════════════════════════════════════════════════ -->
+<header class="topbar">
+  <div style="display:flex; align-items:center; gap:12px;">
+    <button class="btn-icon d-md-none" id="toggleSidebar">
+      <i class="bi bi-list"></i>
+    </button>
+    <span class="topbar-title">{% block page_title %}Tableau de bord{% endblock %}</span>
+  </div>
+
+  <div class="topbar-right">
+    <div class="dropdown">
+      <button class="btn-icon {% if alertes_total %}badge-alert{% endif %}" type="button"
+              data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false"
+              title="Alertes stock">
+        <i class="bi bi-bell"></i>
+      </button>
+      <div class="dropdown-menu dropdown-menu-end alert-menu">
+        <div class="alert-menu-title">Alertes pharmacie</div>
+        {% if alertes_total %}
+          {% for med in alertes_stock_preview %}
+          <a href="{% url 'stock:liste' %}" class="alert-menu-item">
+            <strong>{{ med.nom }}</strong>
+            <small>Stock faible : {{ med.quantite_stock }} restant(s)</small>
+          </a>
+          {% endfor %}
+          {% for med in alertes_expiration_preview %}
+          <a href="{% url 'stock:liste' %}" class="alert-menu-item">
+            <strong>{{ med.nom }}</strong>
+            <small>Expiration : {{ med.date_expiration }}</small>
+          </a>
+          {% endfor %}
+          <div class="dropdown-divider"></div>
+          <a href="{% url 'stock:liste' %}" class="alert-menu-item">
+            Voir toutes les alertes ({{ alertes_total }})
+          </a>
+        {% else %}
+          <div class="alert-menu-item">
+            Aucune alerte pour le moment.
+            <small>Stock et expiration sont corrects.</small>
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════
+     CONTENU PRINCIPAL
+════════════════════════════════════════════════ -->
+<main class="main-content">
+
+  <!-- Messages Django (succès, erreurs...) -->
+  {% if messages %}
+  <div class="django-messages">
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+      {% if message.tags == 'success' %}<i class="bi bi-check-circle me-2"></i>{% endif %}
+      {% if message.tags == 'error' %}<i class="bi bi-exclamation-triangle me-2"></i>{% endif %}
+      {{ message }}
+      <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% block content %}
+  {% endblock %}
+
+</main>
+
+<!-- Bootstrap 5 JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+  // Toggle sidebar sur mobile
+  document.getElementById('toggleSidebar')?.addEventListener('click', () => {
+    document.getElementById('sidebar').classList.toggle('open');
+  });
+</script>
+
+{% block extra_js %}{% endblock %}
+
+</body>
+</html>

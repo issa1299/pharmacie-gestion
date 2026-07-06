@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connexion — {{ site_params.nom_pharmacie|default:'PharmaGest' }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Segoe UI', Arial, sans-serif; min-height: 100vh; display: flex; }
+
+    /* Panneau gauche */
+.left {
+      flex: 1;
+      background: linear-gradient(160deg, {{ site_params.couleur|default:'#084033' }} 0%, {{ site_params.couleur|default:'#1D9E75' }} 100%);
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 60px 40px; color: #fff;
+    }
+    .left i { font-size: 90px; opacity: 0.9; margin-bottom: 28px; }
+    .left h1 { font-size: 36px; font-weight: 700; margin-bottom: 14px; }
+    .left p { font-size: 16px; opacity: 0.85; text-align: center; max-width: 340px; line-height: 1.7; }
+
+    /* Panneau droit */
+    .right {
+      width: 500px; flex-shrink: 0;
+      background: #fff;
+      display: flex; align-items: center; justify-content: center;
+      padding: 60px 50px;
+    }
+    .box { width: 100%; }
+
+    /* Logo */
+    .logo {
+      width: 64px; height: 64px;
+      background: linear-gradient(135deg, #0F6E56, #1D9E75);
+      border-radius: 18px;
+      display: flex; align-items: center; justify-content: center;
+      margin: 0 auto 16px;
+      overflow: hidden;
+    }
+    .logo img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.logo i { font-size: 30px; color: #fff; }
+
+    /* Couleur paramétrable */
+    .brand { color: {{ site_params.couleur|default:'#0F6E56' }}; }
+    .brand-bg { background: {{ site_params.couleur|default:'#0F6E56' }}; }
+    .brand-hover:hover { background: {{ site_params.couleur|default:'#0F6E56' }}; border-color: {{ site_params.couleur|default:'#0F6E56' }}; }
+    .brand-focus:focus-within { border-color: {{ site_params.couleur|default:'#0F6E56' }}; box-shadow: 0 0 0 3px rgba(29,158,117,.1); }
+
+.box h2 { font-size: 26px; font-weight: 700; color: {{ site_params.couleur|default:'#0F6E56' }}; text-align: center; margin-bottom: 6px; }
+    .box .sub { font-size: 14px; color: #999; text-align: center; margin-bottom: 32px; }
+
+    .field { margin-bottom: 20px; }
+    .field label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 8px; }
+    .field-input {
+      display: flex;
+      border: 1.5px solid #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #fff;
+      transition: border-color 0.2s;
+    }
+    .field-input:focus-within {
+      border-color: #1D9E75;
+      box-shadow: 0 0 0 3px rgba(29,158,117,.1);
+    }
+    .field-input .icon {
+      width: 46px;
+      display: flex; align-items: center; justify-content: center;
+      background: #f8f8f8;
+      border-right: 1.5px solid #e0e0e0;
+      color: #aaa;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .field-input input {
+      flex: 1;
+      border: none; outline: none;
+      padding: 12px 14px;
+      font-size: 14px;
+      background: transparent;
+      color: #333;
+      min-width: 0;
+    }
+    .field-input .toggle {
+      width: 46px;
+      display: flex; align-items: center; justify-content: center;
+      background: #f8f8f8;
+      border-left: 1.5px solid #e0e0e0;
+      cursor: pointer;
+      color: #aaa;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+    .field-input .toggle:hover { color: #0F6E56; }
+
+    .row-mid {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+    .row-mid label { font-size: 13px; color: #666; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+    .row-mid input[type=checkbox] { accent-color: #0F6E56; width: 15px; height: 15px; }
+    .row-mid a { font-size: 13px; color: #0F6E56; text-decoration: none; font-weight: 500; }
+    .row-mid a:hover { text-decoration: underline; }
+
+.btn-login {
+      background: {{ site_params.couleur|default:'#0F6E56' }};
+      width: 100%;
+      padding: 13px;
+      color: #fff;
+      border: none; border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: background 0.15s;
+    }
+    .btn-login:hover { background: #1D9E75; }
+
+    .signup-link { text-align: center; margin-top: 22px; font-size: 13px; color: #999; }
+    .signup-link a { color: #0F6E56; font-weight: 600; text-decoration: none; }
+    .signup-link a:hover { text-decoration: underline; }
+
+    .alert-err {
+      background: #fff5f5;
+      border: 1px solid #ffc5c5;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #c0392b;
+      margin-bottom: 20px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    @media (max-width: 768px) {
+      .left { display: none; }
+      .right { width: 100%; padding: 32px 24px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="left">
+    <i class="bi bi-shop"></i>
+    <h1>Bienvenue</h1>
+    <p>Accédez à votre espace {{ site_params.nom_pharmacie|default:'PharmaGest' }} pour gérer votre pharmacie facilement et efficacement.</p>
+  </div>
+
+  <div class="right">
+    <div class="box">
+      <div class="logo">
+        {% if site_params.logo %}
+          <img src="{{ site_params.logo.url }}" alt="Logo {{ site_params.nom_pharmacie|default:'PharmaGest' }}">
+        {% else %}
+          <i class="bi bi-capsule-pill"></i>
+        {% endif %}
+      </div>
+
+      <h2>{{ site_params.nom_pharmacie|default:'PharmaGest' }}</h2>
+      <p class="sub">Connectez-vous à votre espace</p>
+
+      {% if form.errors %}
+        <div class="alert-err">
+          <i class="bi bi-exclamation-triangle"></i>
+          Identifiants incorrects. Veuillez réessayer.
+        </div>
+      {% endif %}
+
+      {% if messages %}
+        {% for message in messages %}
+          <div class="alert-err" style="background:#e8f5f0;border-color:#b2dfcf;color:#0f6e56;">
+            <i class="bi bi-info-circle"></i> {{ message }}
+          </div>
+        {% endfor %}
+      {% endif %}
+
+      <form method="post" action="{% url 'account_login' %}">
+        {% csrf_token %}
+        <input type="hidden" name="next" value="{{ request.GET.next }}">
+
+        <div class="field">
+          <label>Nom d'utilisateur ou email</label>
+          <div class="field-input">
+            <div class="icon"><i class="bi bi-person"></i></div>
+            <input type="text" name="login" placeholder="Entrez votre identifiant" autofocus required>
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Mot de passe</label>
+          <div class="field-input">
+            <div class="icon"><i class="bi bi-lock"></i></div>
+            <input type="password" name="password" placeholder="••••••••" id="pwd" required>
+            <div class="toggle" onclick="togglePwd()"><i class="bi bi-eye" id="eyeIco"></i></div>
+          </div>
+        </div>
+
+        <div class="row-mid">
+          <label>
+            <input type="checkbox" name="remember">
+            Se souvenir de moi
+          </label>
+          <a href="{% url 'accounts:reset_mot_de_passe' %}">Mot de passe oublié ?</a>
+        </div>
+
+        <button type="submit" class="btn-login">
+          <i class="bi bi-box-arrow-in-right"></i>
+          Se connecter
+        </button>
+      </form>
+
+
+    </div>
+  </div>
+
+  <script>
+    function togglePwd() {
+      const p = document.getElementById('pwd');
+      const e = document.getElementById('eyeIco');
+      p.type = p.type === 'password' ? 'text' : 'password';
+      e.className = p.type === 'password' ? 'bi bi-eye' : 'bi bi-eye-slash';
+    }
+  </script>
+</body>
+</html>
+

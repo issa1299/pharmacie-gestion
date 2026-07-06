@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% block title %}Catégories — PharmaGest{% endblock %}
+{% block page_title %}Catégories de médicaments{% endblock %}
+
+{% block content %}
+<div class="row g-3">
+
+  <!-- Formulaire ajout -->
+  <div class="col-12 col-lg-4">
+    <div class="card module-card">
+      <div class="card-header-custom">
+        <h5><i class="bi bi-plus-circle me-2"></i>Nouvelle catégorie</h5>
+      </div>
+      <div class="p-4">
+        <form method="post" action="{% url 'medicaments:ajouter_categorie' %}">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label fw-semibold">Nom *</label>
+            <input type="text" name="nom" class="form-control"
+                   placeholder="Ex: Antibiotiques" required>
+          </div>
+          <div class="mb-4">
+            <label class="form-label fw-semibold">Description</label>
+            <textarea name="description" class="form-control" rows="3"
+                      placeholder="Description optionnelle..."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary w-100">
+            <i class="bi bi-check-lg me-1"></i>Ajouter
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- Liste des catégories -->
+  <div class="col-12 col-lg-8">
+    <div class="card module-card">
+      <div class="card-header-custom">
+        <h5><i class="bi bi-tag me-2"></i>Toutes les catégories</h5>
+        <span style="font-size:12px; color:#aaa;">{{ categories.count }} catégorie(s)</span>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-hover mb-0">
+          <thead>
+            <tr>
+              <th>Nom</th>
+              <th>Description</th>
+              <th>Nb médicaments</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for cat in categories %}
+            <tr>
+              <td><strong>{{ cat.nom }}</strong></td>
+              <td style="color:#888; font-size:13px;">{{ cat.description|default:"—" }}</td>
+              <td>
+                <span class="badge badge-stock-ok module-badge">
+                  {{ cat.medicaments.count }}
+                </span>
+              </td>
+            </tr>
+            {% empty %}
+            <tr>
+              <td colspan="3" class="module-empty text-center py-5">
+                <i class="bi bi-tag fs-2 d-block mb-2"></i>
+                Aucune catégorie. Ajoutez-en une !
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

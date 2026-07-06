@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+{% block title %}Fournisseurs — PharmaGest{% endblock %}
+{% block page_title %}Fournisseurs{% endblock %}
+
+{% block content %}
+
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <form method="get" class="d-flex gap-2">
+    <input type="text" name="q" value="{{ q }}" placeholder="Rechercher un fournisseur..."
+           class="form-control" style="width:250px;">
+    <button type="submit" class="btn btn-outline-primary">
+      <i class="bi bi-search me-1"></i>Rechercher
+    </button>
+    {% if q %}
+    <a href="{% url 'fournisseurs:liste' %}" class="btn btn-outline-secondary">Réinitialiser</a>
+    {% endif %}
+  </form>
+  <a href="{% url 'fournisseurs:ajouter' %}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-1"></i>Ajouter un fournisseur
+  </a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Nom</th>
+          <th>Téléphone</th>
+          <th>Email</th>
+          <th>Adresse</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for f in fournisseurs %}
+        <tr>
+          <td><strong>{{ f.nom }}</strong></td>
+          <td>{{ f.telephone|default:"—" }}</td>
+          <td style="font-size:13px; color:#888;">{{ f.email|default:"—" }}</td>
+          <td style="font-size:13px; color:#888;">{{ f.adresse|default:"—"|truncatechars:40 }}</td>
+          <td>
+            <div class="d-flex gap-1">
+              <a href="{% url 'fournisseurs:modifier' f.pk %}"
+                 class="btn-icon" title="Modifier"
+                 style="width:30px;height:30px;font-size:14px;">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <a href="{% url 'fournisseurs:supprimer' f.pk %}"
+                 class="btn-icon" title="Supprimer"
+                 style="width:30px;height:30px;font-size:14px;color:#E24B4A;">
+                <i class="bi bi-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="5" class="text-center py-5" style="color:#aaa;">
+            <i class="bi bi-truck fs-2 d-block mb-2"></i>
+            Aucun fournisseur enregistré.
+            <a href="{% url 'fournisseurs:ajouter' %}">Ajouter le premier ?</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

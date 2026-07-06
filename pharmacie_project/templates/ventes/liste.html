@@ -1,0 +1,78 @@
+{% extends 'base.html' %}
+{% block title %}Ventes — PharmaGest{% endblock %}
+{% block page_title %}Historique des ventes{% endblock %}
+
+{% block content %}
+
+<div class="module-toolbar d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <form method="get" class="d-flex gap-2">
+    <input type="text" name="q" value="{{ q }}" placeholder="Rechercher facture ou client..."
+           class="form-control" style="width:260px;">
+    <button type="submit" class="btn btn-outline-primary">
+      <i class="bi bi-search me-1"></i>Rechercher
+    </button>
+    {% if q %}
+    <a href="{% url 'ventes:liste' %}" class="btn btn-outline-secondary">Réinitialiser</a>
+    {% endif %}
+  </form>
+  <a href="{% url 'ventes:nouvelle' %}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-1"></i>Nouvelle vente
+  </a>
+</div>
+
+<div class="card">
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>N° Facture</th>
+          <th>Client</th>
+          <th>Total</th>
+          <th>Statut</th>
+          <th>Date</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for vente in ventes %}
+        <tr>
+          <td>
+            <span style="font-family:monospace; font-size:12px;">
+              {{ vente.numero_facture }}
+            </span>
+          </td>
+          <td>{{ vente.client|default:"Client anonyme" }}</td>
+          <td><strong>{{ vente.total }} {{ site_params.devise }}</strong></td>
+          <td>
+            {% if vente.statut == 'validee' %}
+            <span class="badge badge-stock-ok px-2 py-1 rounded-2">✓ Validée</span>
+            {% else %}
+            <span class="badge badge-stock-low px-2 py-1 rounded-2">✗ Annulée</span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px; color:#aaa;">
+            {{ vente.date_vente|date:site_params.format_date }} {{ vente.date_vente|date:"H:i" }}
+          </td>
+          <td>
+            <a href="{% url 'ventes:detail' vente.pk %}"
+               class="btn-icon" title="Voir détail"
+               style="width:30px;height:30px;font-size:14px;">
+              <i class="bi bi-eye"></i>
+            </a>
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="text-center py-5" style="color:#aaa;">
+            <i class="bi bi-receipt fs-2 d-block mb-2"></i>
+            Aucune vente enregistrée.
+            <a href="{% url 'ventes:nouvelle' %}">Créer la première vente ?</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

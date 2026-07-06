@@ -1,0 +1,81 @@
+{% extends 'base.html' %}
+{% block title %}Stock — PharmaGest{% endblock %}
+{% block page_title %}État du stock{% endblock %}
+
+{% block content %}
+
+<!-- Alerte stock faible -->
+{% if stock_faible %}
+<div class="module-alert">
+  <span style="font-size:20px;">⚠️</span>
+  <div style="font-size:13px; color:#C0392B;">
+    <strong>{{ stock_faible.count }} médicament(s) en stock faible !</strong>
+    Pensez à approvisionner.
+  </div>
+</div>
+{% endif %}
+
+<!-- Bouton ajouter mouvement -->
+<div class="module-toolbar d-flex justify-content-end mb-3">
+  <a href="{% url 'stock:ajouter_mouvement' %}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-1"></i>Nouveau mouvement
+  </a>
+</div>
+
+<!-- Tableau stock -->
+<div class="card module-card">
+  <div class="card-header-custom">
+    <h5><i class="bi bi-boxes me-2"></i>Tous les médicaments</h5>
+    <a href="{% url 'stock:mouvements' %}" class="btn btn-outline-primary btn-sm">
+      Voir les mouvements
+    </a>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Médicament</th>
+          <th>Catégorie</th>
+          <th>Stock actuel</th>
+          <th>Seuil alerte</th>
+          <th>Statut</th>
+          <th>Expiration</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for med in medicaments %}
+        <tr>
+          <td><strong>{{ med.nom }}</strong></td>
+          <td>{{ med.categorie|default:"—" }}</td>
+          <td style="font-size:16px; font-weight:700;">{{ med.quantite_stock }}</td>
+          <td style="color:#888;">{{ med.seuil_alerte }}</td>
+          <td>
+            {% if med.stock_faible %}
+            <span class="badge badge-stock-low module-badge">⚠ Stock faible</span>
+            {% else %}
+            <span class="badge badge-stock-ok module-badge">✓ Normal</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if med.est_expire %}
+            <span style="color:#E65100; font-size:13px;">⛔ Expiré</span>
+            {% else %}
+            <span style="color:#888; font-size:13px;">{{ med.date_expiration|default:"—" }}</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="module-empty text-center py-5">
+            <i class="bi bi-boxes fs-2 d-block mb-2"></i>
+            Aucun médicament enregistré.
+            <a href="{% url 'medicaments:ajouter' %}">Ajouter un médicament</a>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}

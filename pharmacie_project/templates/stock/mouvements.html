@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% block title %}Mouvements — PharmaGest{% endblock %}
+{% block page_title %}Mouvements de stock{% endblock %}
+
+{% block content %}
+
+<div class="module-toolbar d-flex justify-content-end mb-3">
+  <a href="{% url 'stock:ajouter_mouvement' %}" class="btn btn-primary">
+    <i class="bi bi-plus-lg me-1"></i>Nouveau mouvement
+  </a>
+</div>
+
+<div class="card module-card">
+  <div class="card-header-custom">
+    <h5><i class="bi bi-arrow-left-right me-2"></i>Historique des mouvements</h5>
+  </div>
+  <div class="table-responsive">
+    <table class="table table-hover mb-0">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Médicament</th>
+          <th>Type</th>
+          <th>Quantité</th>
+          <th>Motif</th>
+          <th>Utilisateur</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in mouvements %}
+        <tr>
+          <td style="font-size:12px; color:#888;">{{ m.date|date:site_params.format_date }} {{ m.date|date:"H:i" }}</td>
+          <td><strong>{{ m.medicament.nom }}</strong></td>
+          <td>
+            {% if m.type_mouvement == 'entree' %}
+            <span class="badge badge-stock-ok module-badge">⬆ Entrée</span>
+            {% elif m.type_mouvement == 'sortie' %}
+            <span class="badge badge-stock-low module-badge">⬇ Sortie</span>
+            {% else %}
+            <span class="badge" style="background:#F0F0F0; color:#555; padding:2px 8px; border-radius:4px;">⟳ Ajustement</span>
+            {% endif %}
+          </td>
+          <td><strong>{{ m.quantite }}</strong></td>
+          <td style="color:#888; font-size:13px;">{{ m.motif|default:"—" }}</td>
+          <td style="font-size:13px;">{{ m.utilisateur|default:"—" }}</td>
+        </tr>
+        {% empty %}
+        <tr>
+          <td colspan="6" class="module-empty text-center py-5">
+            <i class="bi bi-arrow-left-right fs-2 d-block mb-2"></i>
+            Aucun mouvement enregistré.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% endblock %}
