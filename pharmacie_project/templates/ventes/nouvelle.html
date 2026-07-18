@@ -2,147 +2,668 @@
 {% block title %}Nouvelle vente — PharmaGest{% endblock %}
 {% block page_title %}Nouvelle vente{% endblock %}
 
+{% block extra_css %}
+<style>
+  /* ── LAYOUT ──────────────────────────────────────────────────────── */
+  .vente-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 20px;
+    align-items: start;
+  }
+  @media (max-width: 992px) {
+    .vente-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── SEARCH BAR ─────────────────────────────────────────────────── */
+  .search-wrap {
+    position: relative;
+  }
+  .search-wrap .bi-search {
+    position: absolute;
+    left: 14px; top: 50%;
+    transform: translateY(-50%);
+    color: #999; font-size: 15px;
+    pointer-events: none;
+  }
+  .search-input {
+    padding-left: 40px;
+    border-radius: 10px;
+    border: 1.5px solid #E0E6E3;
+    height: 44px;
+    font-size: 14px;
+    transition: border-color .2s, box-shadow .2s;
+    width: 100%;
+  }
+  .search-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 12%, transparent);
+    outline: none;
+  }
+
+  /* ── MED CARDS GRID ─────────────────────────────────────────────── */
+  .med-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 12px;
+  }
+
+  .med-card {
+    background: #fff;
+    border: 1.5px solid #E8EFEB;
+    border-radius: 12px;
+    padding: 12px;
+    cursor: pointer;
+    transition: transform .18s, border-color .18s, box-shadow .18s;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+  .med-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--primary);
+    box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 15%, transparent);
+  }
+  .med-card.in-cart {
+    border-color: var(--primary);
+    background: color-mix(in srgb, var(--primary) 5%, white);
+  }
+  .med-card.stock-zero {
+    opacity: .5;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+
+  /* Image du médicament */
+  .med-img-wrap {
+    width: 80px;
+    height: 80px;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #F4F7F5;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+  .med-img-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+  .med-img-placeholder {
+    font-size: 30px;
+    color: #C8D8D0;
+  }
+
+  .med-card-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #1A1A1A;
+    line-height: 1.3;
+    margin-bottom: 3px;
+  }
+  .med-card-cat {
+    font-size: 10.5px;
+    color: #999;
+    margin-bottom: 6px;
+  }
+  .med-card-price {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--primary);
+  }
+  .med-card-stock {
+    font-size: 10.5px;
+    margin-top: 4px;
+  }
+  .stock-ok   { color: #2DAA72; }
+  .stock-low  { color: #E24B4A; }
+
+  /* Badge "in cart" */
+  .cart-badge {
+    position: absolute;
+    top: 7px; right: 7px;
+    background: var(--primary);
+    color: #fff;
+    border-radius: 50%;
+    width: 18px; height: 18px;
+    font-size: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700;
+  }
+
+  /* ── PANIER TABLE ───────────────────────────────────────────────── */
+  .panier-section {
+    margin-top: 20px;
+  }
+  .panier-section h6 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #444;
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  #tablePanier {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 6px;
+  }
+  #tablePanier thead th {
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: #888;
+    padding: 0 10px 4px;
+    border-bottom: none;
+  }
+  #tablePanier tbody tr {
+    background: #F9FBF9;
+    border-radius: 10px;
+    transition: background .15s;
+  }
+  #tablePanier tbody tr:hover { background: #F2F8F5; }
+  #tablePanier tbody td {
+    padding: 9px 10px;
+    vertical-align: middle;
+    font-size: 13px;
+  }
+  #tablePanier tbody td:first-child { border-radius: 10px 0 0 10px; }
+  #tablePanier tbody td:last-child  { border-radius: 0 10px 10px 0; }
+
+  /* Miniature panier */
+  .panier-img {
+    width: 36px; height: 36px;
+    border-radius: 7px;
+    object-fit: contain;
+    background: #fff;
+    border: 1px solid #E8EFEB;
+    flex-shrink: 0;
+  }
+  .panier-img-placeholder {
+    width: 36px; height: 36px;
+    border-radius: 7px;
+    background: #F0F5F2;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; color: #C8D8D0;
+    border: 1px solid #E8EFEB;
+    flex-shrink: 0;
+  }
+
+  /* Qty stepper */
+  .qty-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .qty-btn {
+    width: 26px; height: 26px;
+    border: 1.5px solid #D5E0DA;
+    border-radius: 7px;
+    background: #fff;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+    color: var(--primary);
+    transition: background .15s, border-color .15s;
+  }
+  .qty-btn:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .qty-input {
+    width: 44px;
+    text-align: center;
+    border: 1.5px solid #D5E0DA;
+    border-radius: 7px;
+    font-size: 13px;
+    padding: 3px 4px;
+    font-weight: 600;
+  }
+  .qty-input:focus { border-color: var(--primary); outline: none; }
+
+  /* Suppr btn */
+  .del-btn {
+    width: 28px; height: 28px;
+    border: none; border-radius: 8px;
+    background: #FFF0F0;
+    color: #E24B4A;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px;
+    transition: background .15s;
+  }
+  .del-btn:hover { background: #E24B4A; color: #fff; }
+
+  /* Empty state */
+  .empty-panier {
+    text-align: center;
+    padding: 30px 20px;
+    color: #BCC9C4;
+  }
+  .empty-panier i { font-size: 40px; display: block; margin-bottom: 8px; }
+  .empty-panier p { font-size: 13px; margin: 0; }
+
+  /* ── RÉSUMÉ PANEL ───────────────────────────────────────────────── */
+  .resume-card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 2px 16px rgba(0,0,0,.07);
+    overflow: hidden;
+    position: sticky;
+    top: 80px;
+  }
+  .resume-header {
+    background: var(--primary);
+    padding: 16px 20px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .resume-header h5 {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #fff;
+  }
+  .resume-body { padding: 18px; }
+
+  .resume-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 13px;
+    color: #555;
+  }
+  .resume-row .val { font-weight: 600; color: #1A1A1A; }
+  .resume-sep { border: none; border-top: 1px dashed #E0E8E4; margin: 10px 0; }
+
+  .resume-total {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0 0;
+  }
+  .resume-total .label { font-size: 13px; font-weight: 700; color: #1A1A1A; }
+  .resume-total .amount {
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--primary);
+    line-height: 1;
+  }
+
+  /* Discount input */
+  .discount-wrap {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .discount-wrap input {
+    width: 80px;
+    border: 1.5px solid #D5E0DA;
+    border-radius: 8px;
+    padding: 4px 8px;
+    font-size: 13px;
+    text-align: right;
+    font-weight: 600;
+  }
+  .discount-wrap input:focus { border-color: var(--primary); outline: none; }
+  .discount-wrap span { font-size: 12px; color: #888; }
+
+  /* Payment modes */
+  .paiement-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    margin: 14px 0 8px;
+  }
+  .paiement-opts { display: flex; flex-direction: column; gap: 6px; }
+  .pay-opt {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border: 1.5px solid #E0E8E4;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    font-size: 13px;
+    font-weight: 500;
+  }
+  .pay-opt:hover { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 4%, white); }
+  .pay-opt input[type=radio] { accent-color: var(--primary); }
+  .pay-opt.selected { border-color: var(--primary); background: color-mix(in srgb, var(--primary) 6%, white); }
+  .pay-icon { font-size: 18px; }
+
+  /* Client select */
+  .client-select {
+    border: 1.5px solid #E0E6E3;
+    border-radius: 10px;
+    height: 42px;
+    font-size: 13px;
+    padding: 0 12px;
+    width: 100%;
+    transition: border-color .2s;
+  }
+  .client-select:focus { border-color: var(--primary); outline: none; }
+
+  /* Validate btn */
+  .btn-valider {
+    width: 100%;
+    background: var(--primary);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: background .2s, transform .15s;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    margin-top: 16px;
+  }
+  .btn-valider:hover { background: var(--primary-dark); transform: translateY(-1px); }
+  .btn-valider:disabled { background: #B0C7BF; cursor: not-allowed; transform: none; }
+
+  .btn-annuler {
+    display: block;
+    text-align: center;
+    width: 100%;
+    padding: 9px;
+    border: 1.5px solid #D5E0DA;
+    border-radius: 10px;
+    color: #777;
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    margin-top: 8px;
+    transition: background .15s;
+  }
+  .btn-annuler:hover { background: #F4F6F5; color: #444; }
+
+  /* ── SECTION TITLES ─────────────────────────────────────────────── */
+  .section-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+  }
+  .section-head h6 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #333;
+    margin: 0;
+  }
+  .section-head .count-badge {
+    background: var(--primary);
+    color: #fff;
+    border-radius: 20px;
+    padding: 1px 9px;
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  /* Tip */
+  .tip-box {
+    background: #FFFBEE;
+    border: 1px solid #FFE999;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #8A6E00;
+    display: flex; align-items: flex-start; gap: 8px;
+    margin-top: 14px;
+  }
+  .tip-box i { flex-shrink: 0; margin-top: 1px; }
+
+  /* Anim on add */
+  @keyframes popIn {
+    0%   { transform: scale(0.85); opacity: 0; }
+    70%  { transform: scale(1.05); }
+    100% { transform: scale(1);    opacity: 1; }
+  }
+  .pop-in { animation: popIn .25s ease forwards; }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row g-3">
+<form method="post" id="formVente">
+{% csrf_token %}
 
-  <!-- Formulaire vente -->
-  <div class="col-12 col-lg-8">
-    <div class="card">
-      <div class="card-header-custom">
-        <h5><i class="bi bi-cart-plus me-2"></i>Enregistrer une vente</h5>
-        <a href="{% url 'ventes:liste' %}" class="btn btn-outline-secondary btn-sm">
-          <i class="bi bi-arrow-left me-1"></i>Retour
-        </a>
-      </div>
-      <div class="p-4">
-        <form method="post" id="formVente">
-          {% csrf_token %}
+{# Champs cachés — remplis par JS avant submit #}
+<div id="hidden-fields"></div>
+<input type="hidden" name="mode_paiement" id="hModePaiement" value="especes">
+<input type="hidden" name="remise"        id="hRemise"       value="0">
 
-          <!-- Client -->
-          <div class="mb-4">
-            <label class="form-label fw-semibold">Client (optionnel)</label>
-            <select name="client" class="form-select">
-              <option value="">-- Client anonyme --</option>
-              {% for client in clients %}
-              <option value="{{ client.pk }}">{{ client.nom }} {{ client.prenom }}</option>
-              {% endfor %}
-            </select>
-          </div>
+<div class="vente-grid">
 
-          <!-- Sélection médicaments -->
-          <div class="mb-3">
-            <label class="form-label fw-semibold">Ajouter un médicament</label>
-            <div class="d-flex gap-2">
-              <select id="selectMed" class="form-select">
-                <option value="">-- Choisir un médicament --</option>
-                {% for med in medicaments %}
-                <option value="{{ med.pk }}"
-                        data-prix="{{ med.prix_vente }}"
-                        data-stock="{{ med.quantite_stock }}"
-                        data-nom="{{ med.nom }}">
-                  {{ med.nom }} — {{ med.prix_vente }} {{ site_params.devise }} (stock: {{ med.quantite_stock }})
-                </option>
-                {% endfor %}
-              </select>
-              <button type="button" class="btn btn-outline-primary" onclick="ajouterLigne()">
-                <i class="bi bi-plus-lg"></i>
-              </button>
-            </div>
-          </div>
+  <!-- ══════════════════════════════════════════════════
+       COLONNE GAUCHE — Catalogue + Panier
+  ═══════════════════════════════════════════════════ -->
+  <div>
 
-          <!-- Lignes de vente -->
-          <div id="lignes" class="mb-4">
-            <table class="table table-sm" id="tableLignes" style="display:none;">
-              <thead>
-                <tr>
-                  <th>Médicament</th>
-                  <th>Prix unitaire</th>
-                  <th>Quantité</th>
-                  <th>Sous-total</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="tbodyLignes"></tbody>
-              <tfoot>
-                <tr>
-                  <td colspan="3" class="text-end fw-bold">Total :</td>
-                  <td colspan="2" class="fw-bold text-success" id="totalAffiche">0 {{ site_params.devise }}</td>
-                </tr>
-              </tfoot>
-            </table>
-            <div id="emptyMsg" class="text-center py-3" style="color:#aaa; font-size:13px;">
-              <i class="bi bi-cart fs-4 d-block mb-1"></i>
-              Aucun médicament ajouté
-            </div>
-          </div>
-
-          <div class="d-flex gap-2 justify-content-end pt-3"
-               style="border-top:1px solid #F0F2F1;">
-            <a href="{% url 'ventes:liste' %}" class="btn btn-outline-secondary">Annuler</a>
-            <button type="submit" class="btn btn-primary">
-              <i class="bi bi-check-lg me-1"></i>Valider la vente
-            </button>
-          </div>
-        </form>
-      </div>
+    <!-- Barre de recherche -->
+    <div class="search-wrap mb-3">
+      <i class="bi bi-search"></i>
+      <input type="text" id="searchInput" class="search-input"
+             placeholder="Rechercher un médicament (nom, catégorie, code-barres…)"
+             autocomplete="off">
     </div>
-  </div>
 
-  <!-- Résumé -->
-  <div class="col-12 col-lg-4">
-    <div class="card">
-      <div class="card-header-custom">
-        <h5><i class="bi bi-receipt me-2"></i>Résumé</h5>
-      </div>
-      <div class="p-4 text-center">
-        <div style="font-size:13px; color:#888; margin-bottom:8px;">Total à payer</div>
-        <div style="font-size:32px; font-weight:700; color:var(--primary);" id="totalResume">
-          0 {{ site_params.devise }}
+    <!-- Catalogue médicaments -->
+    <div class="section-head">
+      <h6><i class="bi bi-grid-3x3-gap me-1"></i>Médicaments disponibles</h6>
+      <span class="count-badge" id="countMeds">{{ medicaments|length }}</span>
+    </div>
+
+    <div class="med-grid" id="medGrid">
+      {% for med in medicaments %}
+      <div class="med-card {% if med.quantite_stock == 0 %}stock-zero{% endif %}"
+           id="card-{{ med.pk }}"
+           data-id="{{ med.pk }}"
+           data-nom="{{ med.nom }}"
+           data-cat="{{ med.categorie.nom|default:'' }}"
+           data-prix="{{ med.prix_vente }}"
+           data-stock="{{ med.quantite_stock }}"
+           data-img="{% if med.image %}{{ med.image.url }}{% endif %}"
+           onclick="toggleMed(this)"
+           title="Cliquer pour ajouter au panier">
+
+        {# Badge panier #}
+        <span class="cart-badge" id="badge-{{ med.pk }}" style="display:none;"></span>
+
+        {# Image #}
+        <div class="med-img-wrap">
+          {% if med.image %}
+            <img src="{{ med.image.url }}" alt="{{ med.nom }}" loading="lazy">
+          {% else %}
+            <i class="bi bi-capsule-pill med-img-placeholder"></i>
+          {% endif %}
         </div>
-        <div style="font-size:12px; color:#aaa; margin-top:4px;" id="nbArticles">
-          0 article(s)
+
+        <div class="med-card-name">{{ med.nom }}</div>
+        <div class="med-card-cat">{{ med.categorie.nom|default:"—" }}</div>
+        <div class="med-card-price">{{ med.prix_vente }} {{ site_params.devise }}</div>
+        <div class="med-card-stock {% if med.quantite_stock <= med.seuil_alerte %}stock-low{% else %}stock-ok{% endif %}">
+          <i class="bi bi-box-seam"></i> Stock : {{ med.quantite_stock }}
         </div>
       </div>
+      {% empty %}
+      <p class="text-muted">Aucun médicament disponible.</p>
+      {% endfor %}
     </div>
-  </div>
 
-</div>
+    <!-- Panier -->
+    <div class="panier-section">
+      <div class="section-head">
+        <h6><i class="bi bi-cart3"></i> Panier</h6>
+        <span class="count-badge" id="countPanier">0</span>
+      </div>
+
+      <div id="emptyPanier" class="empty-panier">
+        <i class="bi bi-cart-x"></i>
+        <p>Cliquez sur un médicament pour l'ajouter</p>
+      </div>
+
+      <table id="tablePanier" style="display:none;">
+        <thead>
+          <tr>
+            <th colspan="2">Médicament</th>
+            <th>Prix unit.</th>
+            <th>Quantité</th>
+            <th>Stock</th>
+            <th>Total</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbodyPanier"></tbody>
+      </table>
+
+      <div class="tip-box">
+        <i class="bi bi-lightbulb-fill"></i>
+        <span><strong>Astuce :</strong> Cliquez sur un médicament dans la grille pour l'ajouter au panier.
+        Recliquez dessus pour le retirer.</span>
+      </div>
+    </div>
+
+  </div><!-- fin col gauche -->
+
+  <!-- ══════════════════════════════════════════════════
+       COLONNE DROITE — Résumé & Paiement
+  ═══════════════════════════════════════════════════ -->
+  <div>
+    <div class="resume-card">
+
+      <div class="resume-header">
+        <i class="bi bi-receipt-cutoff" style="color:#fff; font-size:16px;"></i>
+        <h5>Résumé de la vente</h5>
+      </div>
+
+      <div class="resume-body">
+
+        <!-- Client -->
+        <div style="margin-bottom:14px;">
+          <div class="paiement-label">Client</div>
+          <select name="client" class="client-select">
+            <option value="">— Client anonyme —</option>
+            {% for client in clients %}
+            <option value="{{ client.pk }}">{{ client.nom }} {{ client.prenom }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <!-- Chiffres -->
+        <div class="resume-row">
+          <span>Nombre d'articles</span>
+          <span class="val" id="rNbArticles">0</span>
+        </div>
+        <div class="resume-row">
+          <span>Total articles</span>
+          <span class="val" id="rSousTotal">0 {{ site_params.devise }}</span>
+        </div>
+        <div class="resume-row">
+          <span>Remise</span>
+          <span class="val">
+            <div class="discount-wrap">
+              <input type="number" id="remiseInput" min="0" value="0"
+                     oninput="recalcTotal()" style="width:70px;">
+              <span>{{ site_params.devise }}</span>
+            </div>
+          </span>
+        </div>
+
+        <hr class="resume-sep">
+
+        <div class="resume-total">
+          <span class="label">TOTAL À PAYER</span>
+          <span class="amount" id="rTotal">0 {{ site_params.devise }}</span>
+        </div>
+
+        <!-- Mode de paiement -->
+        <div class="paiement-label">Mode de paiement</div>
+        <div class="paiement-opts">
+          <label class="pay-opt selected" id="pay-especes">
+            <input type="radio" name="pay" value="especes" checked onchange="setPay(this)">
+            <i class="bi bi-cash pay-icon" style="color:#2DAA72;"></i> Espèces
+          </label>
+          <label class="pay-opt" id="pay-om">
+            <input type="radio" name="pay" value="orange_money" onchange="setPay(this)">
+            <i class="bi bi-phone pay-icon" style="color:#FF6A00;"></i> Orange Money
+          </label>
+          <label class="pay-opt" id="pay-mm">
+            <input type="radio" name="pay" value="moov_money" onchange="setPay(this)">
+            <i class="bi bi-phone pay-icon" style="color:#009BDD;"></i> Moov Money
+          </label>
+          <label class="pay-opt" id="pay-carte">
+            <input type="radio" name="pay" value="carte" onchange="setPay(this)">
+            <i class="bi bi-credit-card pay-icon" style="color:#6C5CE7;"></i> Carte bancaire
+          </label>
+        </div>
+
+        <!-- Valider -->
+        <button type="submit" class="btn-valider" id="btnValider" disabled>
+          <i class="bi bi-check-circle-fill"></i> Valider la vente
+        </button>
+        <a href="{% url 'ventes:liste' %}" class="btn-annuler">Annuler</a>
+
+        <div style="margin-top:10px; text-align:center; font-size:11px; color:#AAB8B2;">
+          <i class="bi bi-lock-fill me-1"></i>La vente sera enregistrée et le stock mis à jour
+        </div>
+
+      </div><!-- /resume-body -->
+    </div><!-- /resume-card -->
+  </div><!-- /col droite -->
+
+</div><!-- /vente-grid -->
+</form>
+{% endblock %}
 
 {% block extra_js %}
 <script>
-let lignes = [];
 const devise = "{{ site_params.devise|escapejs }}";
+let panier = []; // [{id, nom, prix, stock, qte, img}]
 
-function ajouterLigne() {
-  const sel = document.getElementById('selectMed');
-  const opt = sel.options[sel.selectedIndex];
-  if (!opt.value) return;
-
-  const medId = opt.value;
-  const nom = opt.dataset.nom;
-  const prix = parseFloat(opt.dataset.prix);
-  const stock = parseInt(opt.dataset.stock);
-
-  // Vérifier si déjà ajouté
-  if (lignes.find(l => l.id === medId)) {
-    alert(`${nom} est déjà dans la liste !`);
-    return;
+/* ── TOGGLE médicament ──────────────────────────────────── */
+function toggleMed(card) {
+  const id    = card.dataset.id;
+  const idx   = panier.findIndex(p => p.id === id);
+  if (idx >= 0) {
+    panier.splice(idx, 1);
+    card.classList.remove('in-cart');
+    document.getElementById('badge-' + id).style.display = 'none';
+  } else {
+    const item = {
+      id:    id,
+      nom:   card.dataset.nom,
+      cat:   card.dataset.cat,
+      prix:  parseFloat(card.dataset.prix),
+      stock: parseInt(card.dataset.stock),
+      qte:   1,
+      img:   card.dataset.img || ''
+    };
+    panier.push(item);
+    card.classList.add('in-cart');
   }
-
-  lignes.push({ id: medId, nom, prix, stock, qte: 1 });
-  renderLignes();
-  sel.selectedIndex = 0;
+  renderPanier();
 }
 
-function renderLignes() {
-  const tbody = document.getElementById('tbodyLignes');
-  const table = document.getElementById('tableLignes');
-  const empty = document.getElementById('emptyMsg');
+/* ── RENDU PANIER ───────────────────────────────────────── */
+function renderPanier() {
+  const tbody = document.getElementById('tbodyPanier');
+  const table = document.getElementById('tablePanier');
+  const empty = document.getElementById('emptyPanier');
 
   tbody.innerHTML = '';
-  let total = 0;
+  const total = panier.reduce((s, p) => s + p.prix * p.qte, 0);
+  const remise = parseFloat(document.getElementById('remiseInput').value) || 0;
 
-  if (lignes.length === 0) {
+  if (panier.length === 0) {
     table.style.display = 'none';
     empty.style.display = 'block';
   } else {
@@ -150,46 +671,127 @@ function renderLignes() {
     empty.style.display = 'none';
   }
 
-  lignes.forEach((l, i) => {
-    const sous = l.prix * l.qte;
-    total += sous;
-    tbody.innerHTML += `
-      <tr>
-        <td>
-          ${l.nom}
-          <input type="hidden" name="medicament_id" value="${l.id}">
-        </td>
-        <td>${l.prix} ${devise}</td>
-        <td>
-          <input type="number" name="quantite" value="${l.qte}" min="1" max="${l.stock}"
-                 class="form-control form-control-sm" style="width:70px;"
-                 onchange="changerQte(${i}, this.value)">
-        </td>
-        <td>${sous.toFixed(0)} ${devise}</td>
-        <td>
-          <button type="button" class="btn-icon" style="width:26px;height:26px;font-size:13px;color:#E24B4A;"
-                  onclick="supprimerLigne(${i})">
-            <i class="bi bi-x-lg"></i>
-          </button>
-        </td>
-      </tr>`;
+  panier.forEach((item, i) => {
+    const sous = (item.prix * item.qte).toFixed(0);
+    const stockCls = item.stock <= 10 ? 'stock-low' : 'stock-ok';
+    const imgHtml = item.img
+      ? `<img src="${item.img}" class="panier-img" alt="${item.nom}">`
+      : `<div class="panier-img-placeholder"><i class="bi bi-capsule-pill"></i></div>`;
+
+    const tr = document.createElement('tr');
+    tr.className = 'pop-in';
+    tr.innerHTML = `
+      <td>${imgHtml}</td>
+      <td>
+        <div style="font-weight:600;font-size:13px;">${item.nom}</div>
+        <div style="font-size:11px;color:#999;">${item.cat}</div>
+      </td>
+      <td style="white-space:nowrap;">${item.prix.toFixed(0)} ${devise}</td>
+      <td>
+        <div class="qty-wrap">
+          <button type="button" class="qty-btn" onclick="changeQte(${i}, -1)">−</button>
+          <input type="number" class="qty-input" value="${item.qte}" min="1" max="${item.stock}"
+                 onchange="setQte(${i}, this.value)" onblur="setQte(${i}, this.value)">
+          <button type="button" class="qty-btn" onclick="changeQte(${i}, 1)">+</button>
+        </div>
+      </td>
+      <td><span class="${stockCls}">${item.stock}</span></td>
+      <td style="font-weight:700;color:var(--primary);white-space:nowrap;">${sous} ${devise}</td>
+      <td>
+        <button type="button" class="del-btn" onclick="supprimerItem(${i})" title="Retirer">
+          <i class="bi bi-trash3"></i>
+        </button>
+      </td>`;
+    tbody.appendChild(tr);
+
+    // Mettre à jour le badge sur la carte
+    const badge = document.getElementById('badge-' + item.id);
+    if (badge) {
+      badge.style.display = 'flex';
+      badge.textContent = item.qte;
+    }
   });
 
-  document.getElementById('totalAffiche').textContent = total.toFixed(0) + ' ' + devise;
-  document.getElementById('totalResume').textContent = total.toFixed(0) + ' ' + devise;
-  document.getElementById('nbArticles').textContent = lignes.length + ' article(s)';
+  // Résumé
+  document.getElementById('countPanier').textContent = panier.length;
+  document.getElementById('rNbArticles').textContent = panier.length;
+  document.getElementById('rSousTotal').textContent  = total.toFixed(0) + ' ' + devise;
+  recalcTotal();
+
+  // Bouton
+  document.getElementById('btnValider').disabled = (panier.length === 0);
+
+  // Champs cachés
+  buildHiddenFields();
 }
 
-function changerQte(i, val) {
-  lignes[i].qte = Math.min(parseInt(val) || 1, lignes[i].stock);
-  renderLignes();
+/* ── TOTAL AVEC REMISE ──────────────────────────────────── */
+function recalcTotal() {
+  const sous   = panier.reduce((s, p) => s + p.prix * p.qte, 0);
+  const remise = Math.max(0, parseFloat(document.getElementById('remiseInput').value) || 0);
+  const net    = Math.max(0, sous - remise);
+  document.getElementById('rTotal').textContent = net.toFixed(0) + ' ' + devise;
+  document.getElementById('hRemise').value = remise;
 }
 
-function supprimerLigne(i) {
-  lignes.splice(i, 1);
-  renderLignes();
+/* ── QTE ────────────────────────────────────────────────── */
+function changeQte(i, delta) {
+  panier[i].qte = Math.max(1, Math.min(panier[i].stock, panier[i].qte + delta));
+  renderPanier();
 }
+function setQte(i, val) {
+  panier[i].qte = Math.max(1, Math.min(panier[i].stock, parseInt(val) || 1));
+  renderPanier();
+}
+function supprimerItem(i) {
+  const id = panier[i].id;
+  panier.splice(i, 1);
+  const card = document.getElementById('card-' + id);
+  if (card) { card.classList.remove('in-cart'); }
+  document.getElementById('badge-' + id).style.display = 'none';
+  renderPanier();
+}
+
+/* ── MODE PAIEMENT ──────────────────────────────────────── */
+function setPay(radio) {
+  document.querySelectorAll('.pay-opt').forEach(l => l.classList.remove('selected'));
+  radio.closest('.pay-opt').classList.add('selected');
+  document.getElementById('hModePaiement').value = radio.value;
+}
+
+/* ── CHAMPS CACHÉS ──────────────────────────────────────── */
+function buildHiddenFields() {
+  const wrap = document.getElementById('hidden-fields');
+  wrap.innerHTML = '';
+  panier.forEach(item => {
+    const f1 = document.createElement('input');
+    f1.type = 'hidden'; f1.name = 'medicament_id'; f1.value = item.id;
+    const f2 = document.createElement('input');
+    f2.type = 'hidden'; f2.name = 'quantite'; f2.value = item.qte;
+    wrap.appendChild(f1);
+    wrap.appendChild(f2);
+  });
+}
+
+/* ── RECHERCHE EN TEMPS RÉEL ────────────────────────────── */
+document.getElementById('searchInput').addEventListener('input', function() {
+  const q = this.value.toLowerCase().trim();
+  let visible = 0;
+  document.querySelectorAll('.med-card').forEach(card => {
+    const match = card.dataset.nom.toLowerCase().includes(q)
+                || card.dataset.cat.toLowerCase().includes(q);
+    card.style.display = match ? '' : 'none';
+    if (match) visible++;
+  });
+  document.getElementById('countMeds').textContent = visible;
+});
+
+/* ── VALIDATION FORM ────────────────────────────────────── */
+document.getElementById('formVente').addEventListener('submit', function(e) {
+  if (panier.length === 0) {
+    e.preventDefault();
+    alert('Ajoutez au moins un médicament !');
+  }
+});
 </script>
-{% endblock %}
-
 {% endblock %}

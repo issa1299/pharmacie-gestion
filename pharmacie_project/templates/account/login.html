@@ -1,10 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Connexion — {{ site_params.nom_pharmacie|default:'PharmaGest' }}</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
+  <link href="{% static 'css/bootstrap-icons.css' %}" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: 'Segoe UI', Arial, sans-serif; min-height: 100vh; display: flex; }
@@ -228,4 +229,5 @@
   </script>
 </body>
 </html>
+
 

@@ -37,6 +37,12 @@ def nouvelle_vente(request):
         client_id = request.POST.get('client')
         medicament_ids = request.POST.getlist('medicament_id')
         quantites = request.POST.getlist('quantite')
+        
+        mode_paiement = request.POST.get('mode_paiement', 'especes')
+        try:
+            remise = float(request.POST.get('remise', 0))
+        except ValueError:
+            remise = 0
 
         if not medicament_ids:
             messages.error(request, "Ajoutez au moins un médicament !")
@@ -49,7 +55,10 @@ def nouvelle_vente(request):
             client_id=client_id if client_id else None,
             utilisateur=request.user,
             numero_facture=generer_numero_facture(),
-            total=0
+            total=0,
+            remise=remise,
+            mode_paiement=mode_paiement,
+            statut_paiement='paye' if mode_paiement == 'especes' else 'en_attente'
         )
 
         total = 0
@@ -69,15 +78,24 @@ def nouvelle_vente(request):
                 prix_unitaire=med.prix_vente,
                 sous_total=qte * med.prix_vente
             )
-            # Déduire du stock
-            med.quantite_stock -= qte
-            med.save()
+            # Déduire du stock UNIQUEMENT si c'est en espèces.
+            # Pour l'API, on déduira lors de la réception du Webhook
+            if mode_paiement == 'especes':
+                med.quantite_stock -= qte
+                med.save()
+                
             total += qte * med.prix_vente
 
         vente.total = total
         vente.save()
-        messages.success(request, f"Vente {vente.numero_facture} enregistrée !")
-        return redirect('ventes:detail', pk=vente.pk)
+        
+        if mode_paiement != 'especes':
+            from .services.payment import initier_paiement
+            url_paiement = initier_paiement(vente)
+            return redirect(url_paiement)
+        else:
+            messages.success(request, f"Vente {vente.numero_facture} enregistrée !")
+            return redirect('ventes:detail', pk=vente.pk)
 
     return render(request, 'ventes/nouvelle.html', {
         'medicaments': medicaments,
@@ -95,3 +113,63 @@ def detail_vente(request, pk):
         'site_params': params,
         'params': params,
     })
+
+# ── PAIMENT API (MOCK) ────────────────────────────────────────────────────────
+
+def mock_payment(request, pk):
+    """
+    Page fictive simulant l'interface de CinetPay / PaySika.
+    L'utilisateur clique sur "Payer" et on déclenche le webhook.
+    """
+    vente = get_object_or_404(Vente, pk=pk)
+    ref = request.GET.get('ref')
+    
+    if request.method == 'POST':
+        # On simule le webhook envoyé par l'agrégateur en arrière-plan
+        import requests
+        from django.urls import reverse
+        webhook_url = request.build_absolute_uri(reverse('ventes:webhook'))
+        # Appel asynchrone / background normalement, mais ici on le fait en synchrone pour tester
+        try:
+            requests.post(webhook_url, json={'transaction_id': ref, 'status': 'ACCEPTED'})
+        except:
+            pass # Ignorer les erreurs réseau locales
+            
+        messages.success(request, "Paiement réussi via l'API !")
+        return redirect('ventes:detail', pk=vente.pk)
+        
+    return render(request, 'ventes/mock_payment.html', {'vente': vente, 'ref': ref})
+
+
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+import json
+
+@csrf_exempt
+def webhook_paiement(request):
+    """
+    URL appelée par l'agrégateur (CinetPay, etc.) quand un paiement aboutit.
+    """
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            transaction_id = data.get('transaction_id')
+            status = data.get('status')
+            
+            # Chercher la vente correspondante
+            vente = Vente.objects.get(reference_paiement=transaction_id)
+            
+            if status == 'ACCEPTED' and vente.statut_paiement == 'en_attente':
+                vente.statut_paiement = 'paye'
+                vente.save()
+                
+                # C'est maintenant qu'on déduit le stock !
+                for ligne in vente.lignes.all():
+                    med = ligne.medicament
+                    med.quantite_stock -= ligne.quantite
+                    med.save()
+                    
+            return JsonResponse({'status': 'ok'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    return JsonResponse({'status': 'invalid method'}, status=405)

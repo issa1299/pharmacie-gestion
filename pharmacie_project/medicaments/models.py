@@ -43,6 +43,13 @@ class Medicament(models.Model):
     date_expiration = models.DateField(null=True, blank=True)
     quantite_stock = models.IntegerField(default=0)
     seuil_alerte = models.IntegerField(default=10)
+    # ── Nouveau champ image ──────────────────────────────────────────
+    image = models.ImageField(
+        upload_to='medicaments/',
+        null=True,
+        blank=True,
+        verbose_name="Photo du médicament"
+    )
 
     def __str__(self):
         return self.nom
@@ -53,6 +60,13 @@ class Medicament(models.Model):
     def est_expire(self):
         from django.utils import timezone
         return self.date_expiration and self.date_expiration < timezone.now().date()
+
+    @property
+    def image_url(self):
+        """Retourne l'URL de l'image ou None si pas d'image."""
+        if self.image:
+            return self.image.url
+        return None
 
     class Meta:
         verbose_name = "Médicament"

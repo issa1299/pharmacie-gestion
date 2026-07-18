@@ -1,0 +1,45 @@
+/*
+ * Polices locales — fallback quand Google Fonts CDN n'est pas accessible
+ * DM Sans → Segoe UI (Windows) → system-ui → sans-serif
+ * DM Mono → Cascadia Code / Consolas (Windows) → monospace
+ */
+
+/* Simulation de DM Sans avec Segoe UI (police Windows premium) */
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Segoe UI'), local('Arial');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 500;
+  src: local('Segoe UI Semibold'), local('Segoe UI'), local('Arial');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 600;
+  src: local('Segoe UI Semibold'), local('Segoe UI Bold'), local('Arial Bold');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 700;
+  src: local('Segoe UI Bold'), local('Arial Bold');
+}
+
+/* Simulation de DM Mono avec Cascadia Code / Consolas */
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 400;
+  src: local('Cascadia Code'), local('Consolas'), local('Courier New');
+}
+@font-face {
+  font-family: 'DM Mono';
+  font-style: normal;
+  font-weight: 500;
+  src: local('Cascadia Code SemiBold'), local('Consolas'), local('Courier New');
+}

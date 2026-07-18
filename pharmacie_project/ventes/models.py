@@ -8,6 +8,18 @@ class Vente(models.Model):
         ('validee', 'Validée'),
         ('annulee', 'Annulée'),
     ]
+    MODE_PAIEMENT_CHOICES = [
+        ('especes', 'Espèces'),
+        ('orange_money', 'Orange Money'),
+        ('moov_money', 'Moov Money'),
+        ('carte', 'Carte bancaire'),
+    ]
+    STATUT_PAIEMENT_CHOICES = [
+        ('en_attente', 'En attente'),
+        ('paye', 'Payé'),
+        ('echoue', 'Échoué'),
+    ]
+
     client = models.ForeignKey(
         Client, on_delete=models.SET_NULL,
         null=True, blank=True, related_name='ventes'
@@ -17,8 +29,18 @@ class Vente(models.Model):
     )
     numero_facture = models.CharField(max_length=50, unique=True)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    remise = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    
+    mode_paiement = models.CharField(max_length=20, choices=MODE_PAIEMENT_CHOICES, default='especes')
+    statut_paiement = models.CharField(max_length=20, choices=STATUT_PAIEMENT_CHOICES, default='paye')
+    reference_paiement = models.CharField(max_length=100, blank=True, null=True)
+
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='validee')
     date_vente = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def net_a_payer(self):
+        return self.total - self.remise
 
     def __str__(self):
         return self.numero_facture

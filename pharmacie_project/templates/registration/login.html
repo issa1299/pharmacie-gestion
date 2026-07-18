@@ -1,10 +1,11 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <title>Connexion — {{ site_params.nom_pharmacie|default:"PharmaGest" }}</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet"/>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet"/>
+  <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet"/>
+  <link href="{% static 'css/bootstrap-icons.css' %}" rel="stylesheet"/>
   <style>
     :root {
       --primary: {{ site_params.couleur|default:'#0F6E56' }};
@@ -66,3 +67,4 @@
   </div>
 </body>
 </html>
+

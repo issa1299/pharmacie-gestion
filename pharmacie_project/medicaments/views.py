@@ -35,7 +35,7 @@ def liste_medicaments(request):
 @pharmacien_required
 def ajouter_medicament(request):
     if request.method == 'POST':
-        form = MedicamentForm(request.POST)
+        form = MedicamentForm(request.POST, request.FILES)
         if form.is_valid():
             form.save()
             messages.success(request, "Médicament ajouté avec succès !")
@@ -53,7 +53,7 @@ def ajouter_medicament(request):
 def modifier_medicament(request, pk):
     medicament = get_object_or_404(Medicament, pk=pk)
     if request.method == 'POST':
-        form = MedicamentForm(request.POST, instance=medicament)
+        form = MedicamentForm(request.POST, request.FILES, instance=medicament)
         if form.is_valid():
             form.save()
             messages.success(request, "Médicament modifié !")

@@ -133,11 +133,32 @@
   </div>
   {% endfor %}
 
+  <div class="t-row" style="margin-top: 10px;">
+    <span>Sous-total</span>
+    <span>{{ vente.total|floatformat:0 }} {{ site_params.devise }}</span>
+  </div>
+  {% if vente.remise > 0 %}
+  <div class="t-row">
+    <span>Remise</span>
+    <span style="color:#e24b4a;">-{{ vente.remise|floatformat:0 }} {{ site_params.devise }}</span>
+  </div>
+  {% endif %}
   <div class="t-total">
-    <span>TOTAL</span>
-    <span>{{ vente.total|floatformat:2 }} {{ site_params.devise }}</span>
-
-
+    <span>NET À PAYER</span>
+    <span>{{ vente.net_a_payer|floatformat:0 }} {{ site_params.devise }}</span>
+  </div>
+  
+  <div class="t-row" style="margin-top: 10px; font-size:11px; color:#555;">
+    <span>Paiement : {{ vente.get_mode_paiement_display }}</span>
+    <span style="text-transform:uppercase;">
+      {% if vente.statut_paiement == 'paye' %}
+        <span style="color:#2DAA72;font-weight:bold;">PAYÉ</span>
+      {% elif vente.statut_paiement == 'en_attente' %}
+        <span style="color:#FF6A00;font-weight:bold;">EN ATTENTE</span>
+      {% else %}
+        <span style="color:#e24b4a;font-weight:bold;">ÉCHOUÉ</span>
+      {% endif %}
+    </span>
   </div>
 
   <hr class="t-sep">

@@ -32,6 +32,7 @@
     </div>
   </div>
 
+  {% if is_pharmacien_or_more %}
   <div class="col-6 col-md-3">
     <div class="stat-card">
       <div class="stat-icon" style="background:#FFF4F4; color:#C0392B;">
@@ -55,6 +56,7 @@
       </div>
     </div>
   </div>
+  {% endif %}
 
 
 
@@ -63,32 +65,34 @@
 
 
 <!-- ── ALERTES ────────────────────────────────── -->
-{% if medicaments_stock_faible %}
-<div class="alert-stock p-3 mb-4 d-flex align-items-center gap-2">
-  <i class="bi bi-exclamation-circle-fill fs-5"></i>
-  <div>
-    <strong>{{ medicaments_stock_faible|length }} médicament(s) en stock faible !</strong>
-    Pensez à passer commande auprès de vos fournisseurs.
-    <a href="{% url 'stock:liste' %}" class="ms-2 fw-semibold" style="color:inherit;">Voir le stock →</a>
+{% if is_pharmacien_or_more %}
+  {% if medicaments_stock_faible %}
+  <div class="alert-stock p-3 mb-4 d-flex align-items-center gap-2">
+    <i class="bi bi-exclamation-circle-fill fs-5"></i>
+    <div>
+      <strong>{{ medicaments_stock_faible|length }} médicament(s) en stock faible !</strong>
+      Pensez à passer commande auprès de vos fournisseurs.
+      <a href="{% url 'stock:liste' %}" class="ms-2 fw-semibold" style="color:inherit;">Voir le stock →</a>
+    </div>
   </div>
-</div>
-{% endif %}
+  {% endif %}
 
-{% if medicaments_expires %}
-<div class="alert-expire p-3 mb-4 d-flex align-items-center gap-2">
-  <i class="bi bi-clock-history fs-5"></i>
-  <div>
-    <strong>{{ medicaments_expires|length }} médicament(s) expiré(s) ou bientôt expirés !</strong>
-    <a href="{% url 'medicaments:liste' %}" class="ms-2 fw-semibold" style="color:inherit;">Voir la liste →</a>
+  {% if medicaments_expires %}
+  <div class="alert-expire p-3 mb-4 d-flex align-items-center gap-2">
+    <i class="bi bi-clock-history fs-5"></i>
+    <div>
+      <strong>{{ medicaments_expires|length }} médicament(s) expiré(s) ou bientôt expirés !</strong>
+      <a href="{% url 'medicaments:liste' %}" class="ms-2 fw-semibold" style="color:inherit;">Voir la liste →</a>
+    </div>
   </div>
-</div>
+  {% endif %}
 {% endif %}
 
 <!-- ── CONTENU EN 2 COLONNES ──────────────────── -->
 <div class="row g-3">
 
   <!-- Dernières ventes -->
-  <div class="col-12 col-lg-7">
+  <div class="col-12 {% if is_pharmacien_or_more %}col-lg-7{% else %}col-lg-12{% endif %}">
     <div class="card">
       <div class="card-header-custom">
         <h5><i class="bi bi-receipt me-2 text-success"></i>Dernières ventes</h5>
@@ -135,6 +139,7 @@
   </div>
 
   <!-- Stock faible -->
+  {% if is_pharmacien_or_more %}
   <div class="col-12 col-lg-5">
     <div class="card">
       <div class="card-header-custom">
@@ -179,6 +184,7 @@
       </div>
     </div>
   </div>
+  {% endif %}
 
 </div>
 

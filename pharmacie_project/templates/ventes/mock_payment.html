@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+{% block title %}Paiement — PharmaGest{% endblock %}
+{% block page_title %}Passerelle de Paiement{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-6 col-lg-5">
+    <div class="card module-card text-center py-5 px-4" style="border-top: 5px solid var(--primary);">
+      
+      <div style="font-size: 50px; color: var(--primary); margin-bottom: 20px;">
+        {% if vente.mode_paiement == 'orange_money' %}
+        <i class="bi bi-phone" style="color: #FF6A00;"></i>
+        {% elif vente.mode_paiement == 'moov_money' %}
+        <i class="bi bi-phone" style="color: #009BDD;"></i>
+        {% else %}
+        <i class="bi bi-credit-card"></i>
+        {% endif %}
+      </div>
+
+      <h4 class="mb-3">Validation du paiement</h4>
+      
+      <p class="text-muted mb-4">
+        Ceci est une page de simulation pour l'API de paiement 
+        (CinetPay, PaySika, etc.).<br><br>
+        Montant à payer : <strong style="font-size:18px;">{{ vente.total }} FCFA</strong>
+      </p>
+
+      <div class="bg-light p-3 rounded-3 mb-4 text-start" style="font-size:13px; font-family:monospace;">
+        <div>Facture : {{ vente.numero_facture }}</div>
+        <div>Mode : {{ vente.get_mode_paiement_display }}</div>
+        <div>Réf API : {{ ref }}</div>
+      </div>
+
+      <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary w-100 py-3 fw-bold" style="font-size: 16px;">
+          Simuler un paiement réussi
+        </button>
+      </form>
+      
+      <div class="mt-4">
+        <a href="{% url 'ventes:detail' vente.pk %}" class="text-danger" style="font-size:13px; text-decoration:none;">
+          Annuler le paiement
+        </a>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

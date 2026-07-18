@@ -47,9 +47,13 @@
             <span class="badge px-2 py-1 rounded-2" style="background:#EEEDFE; color:#534AB7;">
               <i class="bi bi-shield-fill me-1"></i>Super admin
             </span>
-            {% elif u.is_staff %}
+            {% elif u.profile.role == 'patron' %}
+            <span class="badge px-2 py-1 rounded-2" style="background:#EEEDFE; color:#534AB7;">
+              <i class="bi bi-shield-fill me-1"></i>Patron
+            </span>
+            {% elif u.profile.role == 'pharmacien' %}
             <span class="badge px-2 py-1 rounded-2" style="background:var(--primary-bg); color:var(--primary);">
-              <i class="bi bi-shield-check me-1"></i>Administrateur
+              <i class="bi bi-shield-check me-1"></i>Pharmacien
             </span>
             {% else %}
             <span class="badge px-2 py-1 rounded-2" style="background:#F0F0F0; color:#555;">

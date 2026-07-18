@@ -56,10 +56,21 @@
         {% for med in medicaments %}
         <tr>
           <td>
-            <div style="font-weight:500;">{{ med.nom }}</div>
-            {% if med.code_barre %}
-            <div style="font-size:11px; color:#aaa; font-family:monospace;">{{ med.code_barre }}</div>
-            {% endif %}
+            <div class="d-flex align-items-center gap-3">
+              <div style="width: 40px; height: 40px; border-radius: 8px; background: #F4F7F5; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; border: 1px solid #E8EFEB;">
+                {% if med.image %}
+                <img src="{{ med.image.url }}" alt="{{ med.nom }}" style="width: 100%; height: 100%; object-fit: contain;">
+                {% else %}
+                <i class="bi bi-capsule-pill" style="color: #C8D8D0; font-size: 20px;"></i>
+                {% endif %}
+              </div>
+              <div>
+                <div style="font-weight:500;">{{ med.nom }}</div>
+                {% if med.code_barre %}
+                <div style="font-size:11px; color:#aaa; font-family:monospace;">{{ med.code_barre }}</div>
+                {% endif %}
+              </div>
+            </div>
           </td>
           <td>{{ med.categorie|default:"—" }}</td>
           <td>
