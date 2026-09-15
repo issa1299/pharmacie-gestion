@@ -1,0 +1,41 @@
+# ============================================================
+# Render Blueprint — PHARMAGEST
+# Déploiement : Render Dashboard → "New" → "Blueprint" →
+#               sélectionner le repo GitHub → Apply
+# ============================================================
+
+databases:
+  - name: pharmagest-db
+    databaseName: pharmagest
+    user: pharmagest
+    plan: free
+    ipAllowList: []  # Autorise uniquement les connexions internes (safe)
+
+services:
+  - type: web
+    name: pharmagest
+    runtime: python
+    rootDir: pharmacie_project
+    plan: free
+    buildCommand: |
+      pip install -r requirements.txt
+      python manage.py collectstatic --noinput
+      python manage.py migrate
+    startCommand: gunicorn pharmacie_project.wsgi:application --timeout 120
+    healthCheckPath: /
+    envVars:
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DEBUG
+        value: "false"
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pharmagest-db
+          property: connectionString
+      - key: ALLOWED_HOSTS
+        value: localhost,127.0.0.1
+      # Variables optionnelles (à renseigner dans le Dashboard après création) :
+      #   EMAIL_HOST / EMAIL_PORT / EMAIL_HOST_USER / EMAIL_HOST_PASSWORD / DEFAULT_FROM_EMAIL
+      #   TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_FROM_NUMBER
