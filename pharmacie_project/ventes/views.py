@@ -316,3 +316,144 @@ def webhook_paiement(request):
         return JsonResponse({'status': 'error', 'message': 'JSON invalide'}, status=400)
     except Exception as e:
         return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+
+# ── FACTURE PDF ───────────────────────────────────────────────────────────────
+
+from io import BytesIO
+from django.conf import settings as dj_settings
+from django.http import HttpResponse
+from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+from reportlab.lib.units import cm
+from reportlab.platypus import Image, Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
+
+
+@login_required
+def facture_pdf(request, pk):
+    """Génère la facture PDF d'une vente (téléchargeable / imprimable)."""
+    vente = get_object_or_404(
+        Vente.objects.select_related('client', 'utilisateur'), pk=pk
+    )
+    lignes = vente.lignes.select_related('medicament').all()
+    params, _ = Parametres.objects.get_or_create(pk=1)
+    devise = params.devise or 'FCFA'
+
+    buffer = BytesIO()
+    doc = SimpleDocTemplate(
+        buffer, pagesize=A4,
+        rightMargin=2 * cm, leftMargin=2 * cm,
+        topMargin=1.8 * cm, bottomMargin=1.8 * cm,
+    )
+    styles = getSampleStyleSheet()
+    title_style = ParagraphStyle(
+        'FactureTitle', parent=styles['Heading1'],
+        fontSize=20, textColor=colors.HexColor('#0F6E56'),
+        alignment=1, spaceAfter=4,
+    )
+    small = ParagraphStyle('Small', parent=styles['Normal'], fontSize=9, textColor=colors.HexColor('#555555'))
+
+    elements = []
+
+    # ── En-tête pharmacie (logo si disponible) ──
+    logo_img = ''
+    if params.logo:
+        logo_path = dj_settings.MEDIA_ROOT / params.logo.name
+        if logo_path.exists():
+            logo_img = Image(str(logo_path), width=3.2 * cm, height=3.2 * cm)
+    entete = Table(
+        [[logo_img, Paragraph(params.nom_pharmacie, title_style)]],
+        colWidths=[3.6 * cm, None],
+    )
+    entete.setStyle(TableStyle([('VALIGN', (0, 0), (-1, -1), 'MIDDLE')]))
+    elements.append(entete)
+    elements.append(Paragraph(
+        f"{params.adresse or ''}"
+        + (f" | Tel : {params.telephone}" if params.telephone else "")
+        + (f" | {params.email}" if params.email else ""),
+        small,
+    ))
+    elements.append(Spacer(1, 0.5 * cm))
+
+    # ── Infos facture ──
+    client_nom = str(vente.client) if vente.client else 'Client anonyme'
+    caissier = (
+        vente.utilisateur.get_full_name() or vente.utilisateur.username
+        if vente.utilisateur else '-'
+    )
+    infos = Table([
+        ['Facture', vente.numero_facture],
+        ['Date', vente.date_vente.strftime('%d/%m/%Y %H:%M')],
+        ['Client', client_nom],
+        ['Caissier', caissier],
+        ['Mode de paiement', vente.get_mode_paiement_display()],
+        ['Statut paiement', vente.get_statut_paiement_display()],
+    ], colWidths=[4.5 * cm, None])
+    infos.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9.5),
+        ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#666666')),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
+        ('TOPPADDING', (0, 0), (-1, -1), 3),
+    ]))
+    elements.append(infos)
+    elements.append(Spacer(1, 0.4 * cm))
+
+    # ── Lignes ──
+    data = [['Medicament', 'Qte', 'Prix unitaire', f'Sous-total ({devise})']]
+    for ligne in lignes:
+        data.append([
+            ligne.medicament.nom,
+            str(ligne.quantite),
+            f"{ligne.prix_unitaire:,.2f}".replace(',', ' '),
+            f"{ligne.sous_total:,.2f}".replace(',', ' '),
+        ])
+    table = Table(data, colWidths=[8.2 * cm, 2 * cm, 3.4 * cm, 3.4 * cm], repeatRows=1)
+    table.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#0F6E56')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 9),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D9D9D9')),
+        ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F6F8F7')]),
+        ('ALIGN', (1, 1), (-1, -1), 'RIGHT'),
+        ('TOPPADDING', (0, 0), (-1, -1), 5),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+    ]))
+    elements.append(table)
+    elements.append(Spacer(1, 0.4 * cm))
+
+    # ── Totaux ──
+    totaux = Table([
+        ['Total', f"{vente.total:,.2f} {devise}".replace(',', ' ')],
+        ['Remise', f"-{vente.remise:,.2f} {devise}".replace(',', ' ')],
+        ['NET A PAYER', f"{vente.net_a_payer:,.2f} {devise}".replace(',', ' ')],
+    ], colWidths=[4.5 * cm, 4.5 * cm], hAlign='RIGHT')
+    totaux.setStyle(TableStyle([
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('ALIGN', (1, 0), (1, -1), 'RIGHT'),
+        ('LINEABOVE', (0, -1), (-1, -1), 1, colors.HexColor('#0F6E56')),
+        ('TEXTCOLOR', (0, -1), (-1, -1), colors.HexColor('#0F6E56')),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+    ]))
+    elements.append(totaux)
+    elements.append(Spacer(1, 1 * cm))
+
+    if vente.statut == 'annulee':
+        annul_style = ParagraphStyle(
+            'Annul', parent=small, textColor=colors.HexColor('#C0392B'), fontSize=10
+        )
+        elements.append(Paragraph('*** VENTE ANNULEE - FACTURE NON VALABLE ***', annul_style))
+    else:
+        elements.append(Paragraph('Merci de votre visite !', small))
+
+    doc.build(elements)
+    pdf = buffer.getvalue()
+    buffer.close()
+
+    response = HttpResponse(pdf, content_type='application/pdf')
+    response['Content-Disposition'] = f'inline; filename="facture_{vente.numero_facture}.pdf"'
+    return response

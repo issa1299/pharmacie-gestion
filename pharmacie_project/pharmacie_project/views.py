@@ -1,15 +1,18 @@
 # pharmacie_project/views.py
+import json
+from datetime import timedelta
+
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db import transaction
-from django.db.models import DecimalField, F, Sum, Value, Q
+from django.db.models import Count, DecimalField, F, Sum, Value, Q
 from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
 from decimal import Decimal
 from medicaments.models import Medicament
-from ventes.models import Vente
+from ventes.models import Vente, LigneVente
 
 
 @login_required
@@ -22,6 +25,42 @@ def dashboard(request):
     medicaments_stock_faible = Medicament.objects.filter(
         quantite_stock__lte=F('seuil_alerte')
     ).select_related('categorie')
+
+    # ── Données des graphiques (30 derniers jours) ──
+    il_y_a_30j = aujourd_hui - timedelta(days=29)
+    ventes_30j = Vente.objects.filter(
+        date_vente__date__gte=il_y_a_30j, statut='validee'
+    )
+
+    # CA jour par jour sur 7 jours (léger, compatible SQLite)
+    ca_jours_labels, ca_jours_valeurs = [], []
+    for decalage in range(6, -1, -1):
+        jour = aujourd_hui - timedelta(days=decalage)
+        total = ventes_30j.filter(date_vente__date=jour).aggregate(
+            t=Sum('total')
+        )['t'] or 0
+        ca_jours_labels.append(jour.strftime('%d/%m'))
+        ca_jours_valeurs.append(float(total))
+
+    # Top 5 produits vendus (30 jours)
+    top_produits = (
+        LigneVente.objects.filter(vente__statut='validee', vente__date_vente__date__gte=il_y_a_30j)
+        .values('medicament__nom')
+        .annotate(qte=Sum('quantite'))
+        .order_by('-qte')[:5]
+    )
+    top_labels = [t['medicament__nom'][:18] for t in top_produits]
+    top_valeurs = [t['qte'] for t in top_produits]
+
+    # Répartition par mode de paiement (30 jours)
+    modes = (
+        ventes_30j.values('mode_paiement').annotate(
+            nb=Count('id'), total=Sum('total')
+        ).order_by('-total')
+    )
+    MODE_LABELS = dict(Vente.MODE_PAIEMENT_CHOICES)
+    modes_labels = [MODE_LABELS.get(m['mode_paiement'], m['mode_paiement']) for m in modes]
+    modes_valeurs = [float(m['total'] or 0) for m in modes]
 
     return render(request, 'dashboard.html', {
         'total_medicaments': Medicament.objects.count(),
@@ -40,6 +79,14 @@ def dashboard(request):
             date_expiration__isnull=False,
             date_expiration__lte=aujourd_hui,
         ),
+        # ── Graphiques ──
+        'ca_jours_labels': json.dumps(ca_jours_labels),
+        'ca_jours_valeurs': json.dumps(ca_jours_valeurs),
+        'top_labels': json.dumps(top_labels),
+        'top_valeurs': json.dumps(top_valeurs),
+        'modes_labels': json.dumps(modes_labels),
+        'modes_valeurs': json.dumps(modes_valeurs),
+        'ca_30j': ventes_30j.aggregate(t=Sum('total'))['t'] or 0,
     })
 
 

@@ -111,6 +111,40 @@
 
 </div>
 
+<!-- ── GRAPHIQUES (30 derniers jours) ─────────── -->
+<div class="row g-3 mb-4">
+  <div class="col-12 col-lg-6">
+    <div class="card h-100">
+      <div class="card-header-custom">
+        <h5><i class="bi bi-graph-up me-2 text-success"></i>Chiffre d'affaires — 7 derniers jours</h5>
+      </div>
+      <div class="p-3">
+        <canvas id="chartCA" height="150"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-6 col-lg-3">
+    <div class="card h-100">
+      <div class="card-header-custom">
+        <h5><i class="bi bi-trophy me-2 text-warning"></i>Top 5 produits</h5>
+      </div>
+      <div class="p-3">
+        <canvas id="chartTop" height="190"></canvas>
+      </div>
+    </div>
+  </div>
+  <div class="col-12 col-md-6 col-lg-3">
+    <div class="card h-100">
+      <div class="card-header-custom">
+        <h5><i class="bi bi-credit-card me-2 text-primary"></i>Modes de paiement</h5>
+      </div>
+      <div class="p-3">
+        <canvas id="chartModes" height="190"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <!-- ── ALERTES ────────────────────────────────── -->
 {% if is_pharmacien_or_more %}
@@ -235,5 +269,91 @@
   {% endif %}
 
 </div>
+
+<script src="/static/js/chart.min.js"></script>
+<script>
+(function () {
+  const style = getComputedStyle(document.documentElement);
+  const PRIMARY = (style.getPropertyValue('--primary') || '#0F6E56').trim() || '#0F6E56';
+  const gridColor = '#EEF2F0';
+
+  // ── CA 7 derniers jours ──
+  const ctxCA = document.getElementById('chartCA');
+  if (ctxCA) {
+    new Chart(ctxCA, {
+      type: 'line',
+      data: {
+        labels: {{ ca_jours_labels|safe }},
+        datasets: [{
+          label: 'CA',
+          data: {{ ca_jours_valeurs|safe }},
+          borderColor: PRIMARY,
+          backgroundColor: 'rgba(15,110,86,.08)',
+          fill: true,
+          tension: 0.35,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointBackgroundColor: PRIMARY,
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: { beginAtZero: true, grid: { color: gridColor }, ticks: { callback: v => v >= 1000 ? (v/1000) + 'k' : v } },
+          x: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // ── Top 5 produits ──
+  const ctxTop = document.getElementById('chartTop');
+  if (ctxTop) {
+    new Chart(ctxTop, {
+      type: 'bar',
+      data: {
+        labels: {{ top_labels|safe }},
+        datasets: [{
+          data: {{ top_valeurs|safe }},
+          backgroundColor: ['#0F6E56', '#2E9E7F', '#5FBF9F', '#93D8BF', '#C7ECD9'],
+          borderRadius: 6,
+        }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { beginAtZero: true, grid: { color: gridColor }, ticks: { precision: 0 } },
+          y: { grid: { display: false } }
+        }
+      }
+    });
+  }
+
+  // ── Modes de paiement ──
+  const ctxModes = document.getElementById('chartModes');
+  if (ctxModes) {
+    new Chart(ctxModes, {
+      type: 'doughnut',
+      data: {
+        labels: {{ modes_labels|safe }},
+        datasets: [{
+          data: {{ modes_valeurs|safe }},
+          backgroundColor: ['#0F6E56', '#F2994A', '#185FA5', '#9B51E0'],
+          borderWidth: 2,
+          borderColor: '#fff',
+        }]
+      },
+      options: {
+        responsive: true,
+        cutout: '62%',
+        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } } }
+      }
+    });
+  }
+})();
+</script>
 
 {% endblock %}
