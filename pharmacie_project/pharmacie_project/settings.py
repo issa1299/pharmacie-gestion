@@ -39,6 +39,10 @@ ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(','
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME:
     ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+# PythonAnywhere : définir PYTHONANYWHERE_HOST=<utilisateur>.pythonanywhere.com
+PYTHONANYWHERE_HOST = os.environ.get('PYTHONANYWHERE_HOST')
+if PYTHONANYWHERE_HOST:
+    ALLOWED_HOSTS.append(PYTHONANYWHERE_HOST)
 
 # Origines de confiance pour les formulaires POST (CSRF) derrière HTTPS
 CSRF_TRUSTED_ORIGINS = [
@@ -46,11 +50,13 @@ CSRF_TRUSTED_ORIGINS = [
     if h not in ('localhost', '127.0.0.1', 'testserver')
 ]
 
-# Sécurité derrière le reverse-proxy de Render (TLS + HTTPS obligatoire)
+# Sécurité derrière un reverse-proxy (Render, PythonAnywhere, etc.)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
-SECURE_SSL_REDIRECT = not DEBUG
-SESSION_COOKIE_SECURE = not DEBUG
-CSRF_COOKIE_SECURE = not DEBUG
+# Configurable par plateforme via l'environnement (désactivé par défaut pour
+# rester compatible PythonAnywhere où http et https cohabitent sans souci).
+SECURE_SSL_REDIRECT = os.environ.get('SECURE_SSL_REDIRECT', 'False') == 'True'
+SESSION_COOKIE_SECURE = os.environ.get('SESSION_COOKIE_SECURE', 'False') == 'True'
+CSRF_COOKIE_SECURE = os.environ.get('CSRF_COOKIE_SECURE', 'False') == 'True'
 
 
 

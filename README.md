@@ -24,43 +24,86 @@ COMPTE DEMO : admin / admin123
 > python manage.py createsuperuser
 > ```
 
-DÉPLOIEMENT SUR RENDER
-======================
+DÉPLOIEMENT SUR PYTHONANYWHERE
+==============================
 
-Le projet est prêt pour Render (blueprint ``render.yaml`` à la racine du dépôt).
+Le projet est prêt pour PythonAnywhere (sur ce plan on garde SQLite :
+vos données locales sont conservées telles quelles, pas besoin de PostgreSQL).
 
-1. Poussez le code sur GitHub :
+Remplacer dans ces étapes ``MONUTILISATEUR`` par votre nom d'utilisateur
+PythonAnywhere (ex. ``issa``) et ``pharmagest`` par votre mot de passe.
+
+1. Créez un compte gratuit sur https://www.pythonanywhere.com
+2. Onglet **Consoles** → **Bash** (nouvelle console), puis :
    ```bash
-   git add .
-   git commit -m "Préparation déploiement Render"
-   git push origin main
+   # Récupérer le code
+   git clone https://github.com/issa1299/pharmacie-gestion.git
+   cd pharmacie-gestion/pharmacie_project
+
+   # Environnement virtuel + dépendances
+   mkvirtualenv --python=/usr/bin/python3.12 pharmagest
+   pip install -r requirements.txt
    ```
-2. Dans Render Dashboard → **New** → **Blueprint**, choisissez le repo GitHub.
-3. Render lit ``render.yaml`` et crée automatiquement :
-   - le service web ``pharmagest`` (gunicorn + PostgreSQL),
-   - la base PostgreSQL ``pharmagest-db`` (variable ``DATABASE_URL`` injectée),
-   - `SECRET_KEY` générée, ``DEBUG=false``.
-4. Le super-utilisateur est créé **automatiquement au build** (pas de Shell
-   nécessaire sur le plan gratuit) :
-   - À la création du Blueprint, Render vous demande de saisir le mot de passe
-     de ``DJANGO_SUPERUSER_PASSWORD`` (username = ``admin``).
-   - Ou ajoutez-le après coup dans **Dashboard → Environment** :
-     ``DJANGO_SUPERUSER_PASSWORD=monMdpF0rt`` puis relancez un déploiement
-     (bouton **Deploy** → **Clear build cache & deploy**).
-   - Si ``DJANGO_SUPERUSER_PASSWORD`` reste vide, aucun admin n'est créé et le
-     build affiche un message d'avertissement (visible dans les logs).
-5. Ouvrez l'URL ``https://pharmagest.onrender.com`` et connectez-vous avec
-   ``admin`` et le mot de passe choisi.
+   (Si ``python3.12`` n'existe pas, essayez ``python3.13`` ou ``python3.11``.)
+3. Fichiers de configuration (dans ``~/pharmacie-gestion/pharmacie_project/``) :
+   ```bash
+   cp .env.example .env
+   nano .env    # mettre DEBUG=False, SECRET_KEY (une longue clé aléatoire),
+                # PYTHONANYWHERE_HOST=MONUTILISATEUR.pythonanywhere.com
+   ```
+4. Base de données + admin + fichiers statiques :
+   ```bash
+   python manage.py migrate
+   python manage.py createsuperuser   # crée l'admin (nom + mot de passe)
+   python manage.py collectstatic --noinput
+   ```
+   💡 Pour récupérer VOS données actuelles : onglet **Files** → naviguez vers
+   ``/home/MONUTILISATEUR/`` → téléversez votre ``db.sqlite3`` local à la place
+   de celui créé (ensuite pas besoin de ``migrate``/``createsuperuser``).
+5. Onglet **Web** → **Add a new web app** :
+   - « Manual configuration » → choisissez la même version Python que le venv.
+   - « Source code » → ``/home/MONUTILISATEUR/pharmacie-gestion/pharmacie_project``
+   - « Working directory » → ``/home/MONUTILISATEUR/``
+   - « Virtualenv » → ``/home/MONUTILISATEUR/.virtualenvs/pharmagest``
+6. Cliquez sur le lien **WSGI configuration file** et mettez tout le contenu :
+   ```python
+   import os
+   import sys
+   from dotenv import load_dotenv
 
-   > Remarque sécurité : le réinitialisation directe de mot de passe
-   > (``/gestion/reset-password/``) est désactivée en production (réservée au
-   > développement). En production, utilisez le flux « mot de passe oublié »
-   > par email + code.
+   PROJECT = '/home/MONUTILISATEUR/pharmacie-gestion/pharmacie_project'
+   if PROJECT not in sys.path:
+       sys.path.append(PROJECT)
 
-Variables optionnelles (Dashboard → Environment) :
-- Email SMTP : ``EMAIL_HOST``, ``EMAIL_PORT``, ``EMAIL_HOST_USER``, ``EMAIL_HOST_PASSWORD``, ``DEFAULT_FROM_EMAIL``
+   load_dotenv(os.path.join(PROJECT, '.env'))
+
+   os.environ['DJANGO_SETTINGS_MODULE'] = 'pharmacie_project.settings'
+
+   from django.core.wsgi import get_wsgi_application
+   application = get_wsgi_application()
+   ```
+7. Section **Static files** (deux lignes à ajouter) :
+   - URL `/static/` → `/home/MONUTILISATEUR/pharmacie-gestion/pharmacie_project/staticfiles/`
+   - URL `/media/` → `/home/MONUTILISATEUR/pharmacie-gestion/pharmacie_project/media/`
+8. Cliquez sur le bouton vert **Reload** en haut de la page **Web**.
+9. Votre site est en ligne : ``https://MONUTILISATEUR.pythonanywhere.com``
+10. À chaque mise à jour du code :
+    ```bash
+    git pull
+    pip install -r requirements.txt   # si les deps changent
+    python manage.py migrate          # si des migrations changent
+    python manage.py collectstatic --noinput
+    ```
+    puis **Reload** dans l'onglet Web.
+
+Variables optionnelles (dans le fichier ``.env``) :
+- Email SMTP : ``EMAIL_HOST``, ``EMAIL_PORT``, ``EMAIL_HOST_USER``,
+  ``EMAIL_HOST_PASSWORD``, ``DEFAULT_FROM_EMAIL``
 - SMS Twilio : ``TWILIO_ACCOUNT_SID``, ``TWILIO_AUTH_TOKEN``, ``TWILIO_FROM_NUMBER``
 
-⚠️ Attention : sur le plan gratuit Render, les fichiers médias (logos, photos) et
-les bases SQLite sont éphémères. La base PostgreSQL persiste ; pour les uploads,
-ajoutez un *Persistent Disk* (plan payant) monté sur ``/opt/render/project/media``.
+> Remarque sécurité : la réinitialisation directe de mot de passe
+> (``/gestion/reset-password/``) est désactivée en production (réservée au
+> développement). En production, utilisez le flux « mot de passe oublié ».
+
+> Le déploiement Render (``render.yaml`` + gunicorn) reste disponible mais n'est
+> plus la voie recommandée.
