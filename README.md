@@ -111,3 +111,23 @@ Variables optionnelles (dans le fichier ``.env``) :
 
 > Le déploiement Render (``render.yaml`` + gunicorn) reste disponible mais n'est
 > plus la voie recommandée.
+
+SÉCURITÉ
+========
+
+Mesures actives en production :
+- ``DEBUG=False`` et ``SECRET_KEY`` dans le fichier ``.env`` (jamais commité).
+- ``ALLOWED_HOSTS`` restreint au domaine réel (``PYTHONANYWHERE_HOST``).
+- Réinitialisation directe de mot de passe (``/gestion/reset-password/``)
+  **désactivée en production**.
+- Anti force brute : 5 échecs de connexion → blocage 5 minutes
+  (``ACCOUNT_RATE_LIMITS['login_failed'] = '5/5m/key'``).
+- HTTPS uniquement : ``SECURE_SSL_REDIRECT=True``, ``SESSION_COOKIE_SECURE=True``,
+  ``CSRF_COOKIE_SECURE=True`` dans le ``.env``.
+- Mots de passe hachés (pbkdf2/sha256), ``X-Frame-Options: DENY``.
+
+Bonnes pratiques :
+- Gardez le ``.env`` secret et utilisez un mot de passe admin fort.
+- Sauvegardez régulièrement ``db.sqlite3`` (onglet Files → télécharger).
+- Configurez un vrai serveur SMTP pour que les codes « mot de passe oublié »
+  partent par email (sinon ils apparaissent dans les logs).

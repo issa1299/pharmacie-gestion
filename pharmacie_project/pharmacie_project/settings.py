@@ -121,6 +121,12 @@ ACCOUNT_LOGIN_ON_SIGNUP = True
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/accounts/login/'
 
+# ── Anti force brute sur la page de connexion ─────────────────
+# Blocage temporaire après 5 échecs de connexion (5 minutes).
+ACCOUNT_RATE_LIMITS = {
+    'login_failed': '5/5m/key',
+}
+
 # Email (pour mot de passe oublié)
 EMAIL_HOST = os.environ.get('EMAIL_HOST', '')
 EMAIL_PORT = int(os.environ.get('EMAIL_PORT', '587'))
