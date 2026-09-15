@@ -21,6 +21,7 @@ services:
       pip install -r requirements.txt
       python manage.py collectstatic --noinput
       python manage.py migrate
+      python manage.py create_superuser
     startCommand: gunicorn pharmacie_project.wsgi:application --timeout 120
     healthCheckPath: /
     envVars:
@@ -36,6 +37,16 @@ services:
           property: connectionString
       - key: ALLOWED_HOSTS
         value: localhost,127.0.0.1
+      # ── Super-utilisateur (aucun Shell requis sur Render) ─────────────────
+      # Le build exécute : python manage.py create_superuser
+      # Le mot de passe est demandé à la création du Blueprint (et modifiable
+      # ensuite dans Dashboard → Environment, puis relancez un deploy).
+      - key: DJANGO_SUPERUSER_USERNAME
+        value: admin
+      - key: DJANGO_SUPERUSER_EMAIL
+        value: admin@pharmagest.onrender.com
+      - key: DJANGO_SUPERUSER_PASSWORD
+        sync: false
       # Variables optionnelles (à renseigner dans le Dashboard après création) :
       #   EMAIL_HOST / EMAIL_PORT / EMAIL_HOST_USER / EMAIL_HOST_PASSWORD / DEFAULT_FROM_EMAIL
       #   TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN / TWILIO_FROM_NUMBER

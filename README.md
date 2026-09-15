@@ -40,12 +40,22 @@ Le projet est prêt pour Render (blueprint ``render.yaml`` à la racine du dép�
    - le service web ``pharmagest`` (gunicorn + PostgreSQL),
    - la base PostgreSQL ``pharmagest-db`` (variable ``DATABASE_URL`` injectée),
    - `SECRET_KEY` générée, ``DEBUG=false``.
-4. Après le premier déploiement, créez le compte admin :
-   Render Dashboard → service ``pharmagest`` → **Shell** :
-   ```bash
-   python manage.py createsuperuser
-   ```
-5. Ouvrez l'URL ``https://pharmagest.onrender.com``.
+4. Le super-utilisateur est créé **automatiquement au build** (pas de Shell
+   nécessaire sur le plan gratuit) :
+   - À la création du Blueprint, Render vous demande de saisir le mot de passe
+     de ``DJANGO_SUPERUSER_PASSWORD`` (username = ``admin``).
+   - Ou ajoutez-le après coup dans **Dashboard → Environment** :
+     ``DJANGO_SUPERUSER_PASSWORD=monMdpF0rt`` puis relancez un déploiement
+     (bouton **Deploy** → **Clear build cache & deploy**).
+   - Si ``DJANGO_SUPERUSER_PASSWORD`` reste vide, aucun admin n'est créé et le
+     build affiche un message d'avertissement (visible dans les logs).
+5. Ouvrez l'URL ``https://pharmagest.onrender.com`` et connectez-vous avec
+   ``admin`` et le mot de passe choisi.
+
+   > Remarque sécurité : le réinitialisation directe de mot de passe
+   > (``/gestion/reset-password/``) est désactivée en production (réservée au
+   > développement). En production, utilisez le flux « mot de passe oublié »
+   > par email + code.
 
 Variables optionnelles (Dashboard → Environment) :
 - Email SMTP : ``EMAIL_HOST``, ``EMAIL_PORT``, ``EMAIL_HOST_USER``, ``EMAIL_HOST_PASSWORD``, ``DEFAULT_FROM_EMAIL``
