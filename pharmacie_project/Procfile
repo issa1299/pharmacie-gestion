@@ -1,0 +1,1 @@
+web: gunicorn pharmacie_project.wsgi:application --timeout 120

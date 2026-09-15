@@ -36,3 +36,8 @@ Thumbs.db
 # Tests
 .coverage
 htmlcov/
+
+# Déploiement
+staticfiles/
+db_dump.json
+
