@@ -7,7 +7,7 @@ from django.db.models import F, Q
 from django.utils import timezone
 from decimal import Decimal, InvalidOperation
 from .models import Vente, LigneVente
-from medicaments.models import Medicament
+from medicaments.models import Medicament, Categorie
 from clients.models import Client
 from parametres.models import Parametres
 from accounts.permissions import pharmacien_required
@@ -62,6 +62,12 @@ def liste_ventes(request):
 def nouvelle_vente(request):
     medicaments = Medicament.objects.filter(quantite_stock__gt=0).order_by('nom')
     clients = Client.objects.all().order_by('nom')
+    categories = Categorie.objects.all()
+    contexte = {
+        'medicaments': medicaments,
+        'clients': clients,
+        'categories': categories,
+    }
 
     if request.method == 'POST':
         client_id = request.POST.get('client') or None
@@ -78,9 +84,7 @@ def nouvelle_vente(request):
 
         if not medicament_ids:
             messages.error(request, "Ajoutez au moins un médicament !")
-            return render(request, 'ventes/nouvelle.html', {
-                'medicaments': medicaments, 'clients': clients
-            })
+            return render(request, 'ventes/nouvelle.html', contexte)
 
         # ── Validation stricte AVANT toute écriture ──
         lignes_valides = []
@@ -89,29 +93,21 @@ def nouvelle_vente(request):
                 qte = int(qte_brute)
             except (ValueError, TypeError):
                 messages.error(request, "Quantité invalide détectée !")
-                return render(request, 'ventes/nouvelle.html', {
-                    'medicaments': medicaments, 'clients': clients
-                })
+                return render(request, 'ventes/nouvelle.html', contexte)
             if qte <= 0:
                 messages.error(request, "Les quantités doivent être supérieures à zéro !")
-                return render(request, 'ventes/nouvelle.html', {
-                    'medicaments': medicaments, 'clients': clients
-                })
+                return render(request, 'ventes/nouvelle.html', contexte)
             try:
                 med = Medicament.objects.get(pk=med_id)
             except Medicament.DoesNotExist:
                 messages.error(request, "Un médicament sélectionné n'existe plus !")
-                return render(request, 'ventes/nouvelle.html', {
-                    'medicaments': medicaments, 'clients': clients
-                })
+                return render(request, 'ventes/nouvelle.html', contexte)
             if qte > med.quantite_stock:
                 messages.error(
                     request,
                     f"Stock insuffisant pour {med.nom} (dispo : {med.quantite_stock}) !"
                 )
-                return render(request, 'ventes/nouvelle.html', {
-                    'medicaments': medicaments, 'clients': clients
-                })
+                return render(request, 'ventes/nouvelle.html', contexte)
             lignes_valides.append((med, qte))
 
         total = sum(Decimal(med.prix_vente) * qte for med, qte in lignes_valides)
@@ -151,9 +147,7 @@ def nouvelle_vente(request):
                         )
         except Exception:
             messages.error(request, "Erreur lors de l'enregistrement — réessayez.")
-            return render(request, 'ventes/nouvelle.html', {
-                'medicaments': medicaments, 'clients': clients
-            })
+            return render(request, 'ventes/nouvelle.html', contexte)
 
         if mode_paiement != 'especes':
             from .services.payment import initier_paiement
@@ -162,10 +156,7 @@ def nouvelle_vente(request):
         messages.success(request, f"Vente {vente.numero_facture} enregistrée !")
         return redirect('ventes:detail', pk=vente.pk)
 
-    return render(request, 'ventes/nouvelle.html', {
-        'medicaments': medicaments,
-        'clients': clients,
-    })
+    return render(request, 'ventes/nouvelle.html', contexte)
 
 @login_required
 def detail_vente(request, pk):
