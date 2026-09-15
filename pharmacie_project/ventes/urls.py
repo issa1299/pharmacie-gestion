@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from . import exports
 
 app_name = 'ventes'
 
@@ -11,4 +12,11 @@ urlpatterns = [
     path('<int:pk>/annuler/', views.annuler_vente, name='annuler'),
     path('<int:pk>/mock-payment/', views.mock_payment, name='mock_payment'),
     path('webhook/', views.webhook_paiement, name='webhook'),
+
+    # ── Exports CSV ──
+    path('export/ventes/', exports.export_ventes_csv, name='export_ventes'),
+    path('export/medicaments/', exports.export_medicaments_csv, name='export_medicaments'),
+    path('export/clients/', exports.export_clients_csv, name='export_clients'),
+    path('export/mouvements/', exports.export_mouvements_csv, name='export_mouvements'),
+    path('export/vente/<int:pk>/', exports.export_vente_detail_csv, name='export_vente_detail'),
 ]

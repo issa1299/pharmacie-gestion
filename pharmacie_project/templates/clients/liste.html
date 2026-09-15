@@ -15,9 +15,14 @@
     <a href="{% url 'clients:liste' %}" class="btn btn-outline-secondary">Réinitialiser</a>
     {% endif %}
   </form>
-  <a href="{% url 'clients:ajouter' %}" class="btn btn-primary">
-    <i class="bi bi-plus-lg me-1"></i>Ajouter un client
-  </a>
+  <div class="d-flex gap-2">
+    <a href="{% url 'ventes:export_clients' %}" class="btn btn-outline-secondary" title="Télécharger en CSV (Excel)">
+      <i class="bi bi-download me-1"></i>CSV
+    </a>
+    <a href="{% url 'clients:ajouter' %}" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i>Ajouter un client
+    </a>
+  </div>
 </div>
 
 <div class="card module-card">

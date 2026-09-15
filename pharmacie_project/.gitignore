@@ -40,4 +40,5 @@ htmlcov/
 # Déploiement
 staticfiles/
 db_dump.json
+backups/
 

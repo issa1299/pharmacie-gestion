@@ -131,3 +131,44 @@ Bonnes pratiques :
 - Sauvegardez régulièrement ``db.sqlite3`` (onglet Files → télécharger).
 - Configurez un vrai serveur SMTP pour que les codes « mot de passe oublié »
   partent par email (sinon ils apparaissent dans les logs).
+
+Sauvegarde automatique recommandée
+----------------------------------
+Une commande intégrée crée une sauvegarde JSON complète de la base dans
+``backups/`` et ne conserve que les 7 dernières (rotation automatique) :
+
+.. code-block:: bash
+
+    python manage.py sauvegarde_bd          # à la main
+    python manage.py sauvegarde_bd --garder 14   # garder 14 sauvegardes
+
+Pour la rendre quotidienne sur PythonAnywhere : onglet **Tasks** →
+**Create a new task**, horaire voulu (ex. ``3:30``), commande :
+
+::
+
+    workon pharmagest && cd ~/pharmacie-gestion/pharmacie_project && python manage.py sauvegarde_bd
+
+Pour restaurer une sauvegarde (attention : remplace les données actuelles) :
+
+.. code-block:: bash
+
+    python manage.py flush --noinput
+    python manage.py loaddata backups/sauvegarde_AAAAMMJJ_HHMM.json
+
+Exports CSV
+-----------
+Boutons « CSV » dans les listes **ventes**, **médicaments**, **clients** et
+**mouvements de stock** : téléchargent un fichier lisible directement dans
+Excel (séparateur ``;``). Les rapports suivent les filtres actifs là où
+appliqué (ventes : recherche + statut).
+
+Caisse Express
+--------------
+La page « Nouvelle vente » est une caisse optimisée pour les caissiers :
+recherche instantanée, filtres par catégorie, **scan code-barres** (le champ
+scan lit, ajoute au ticket et re-arme automatiquement), clavier tactile pour
+les quantités, calcul du **monnaie à rendre**, raccourcis clavier (F1 focus
+recherche, F4 vider le ticket, F9 valider/Enregistrer, Échap fermer le
+clavier) et choix du client + mode de paiement sur un seul écran.
+

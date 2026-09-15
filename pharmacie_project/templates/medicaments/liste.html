@@ -32,9 +32,14 @@
     <a href="{% url 'medicaments:liste' %}" class="btn btn-outline-secondary">Réinitialiser</a>
     {% endif %}
   </form>
-  <a href="{% url 'medicaments:ajouter' %}" class="btn btn-primary">
-    <i class="bi bi-plus-lg me-1"></i>Ajouter
-  </a>
+  <div class="d-flex gap-2">
+    <a href="{% url 'ventes:export_medicaments' %}" class="btn btn-outline-secondary" title="Télécharger en CSV (Excel)">
+      <i class="bi bi-download me-1"></i>CSV
+    </a>
+    <a href="{% url 'medicaments:ajouter' %}" class="btn btn-primary">
+      <i class="bi bi-plus-lg me-1"></i>Ajouter
+    </a>
+  </div>
 </div>
 
 <!-- Tableau -->
