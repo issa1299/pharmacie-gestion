@@ -66,6 +66,10 @@ PythonAnywhere (ex. ``issa``) et ``pharmagest`` par votre mot de passe.
    - « Working directory » → ``/home/MONUTILISATEUR/``
    - « Virtualenv » → ``/home/MONUTILISATEUR/.virtualenvs/pharmagest``
 6. Cliquez sur le lien **WSGI configuration file** et mettez tout le contenu :
+   💡 Le fichier prêt à l'emploi est dans le dépôt :
+   ``pythonanywhere_wsgi.example.py`` (racine du dépôt) — ouvrez-le dans
+   l'onglet **Files** de PythonAnywhere, copiez tout son contenu sans espaces,
+   et collez-le dans l'éditeur WSGI :
    ```python
    import os
    import sys
