@@ -1,48 +1,80 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q
+from django.core.paginator import Paginator
+from django.db import transaction
+from django.db.models import F, Q
 from django.utils import timezone
+from decimal import Decimal, InvalidOperation
 from .models import Vente, LigneVente
 from medicaments.models import Medicament
 from clients.models import Client
 from parametres.models import Parametres
+from accounts.permissions import pharmacien_required
+
 
 def generer_numero_facture():
+    """Génère un numéro unique — verrouille la table pour éviter les doublons
+    en cas de ventes simultanées (2 caissiers au même moment)."""
     annee = timezone.now().year
-    count = Vente.objects.filter(date_vente__year=annee).count() + 1
-    return f"FACT-{annee}-{count:04d}"
+    with transaction.atomic():
+        derniers = (
+            Vente.objects.select_for_update()
+            .filter(date_vente__year=annee, numero_facture__startswith=f"FACT-{annee}-")
+            .order_by('-numero_facture')
+        )
+        if derniers.exists():
+            try:
+                dernier_num = int(derniers.first().numero_facture.split('-')[-1])
+            except (ValueError, IndexError):
+                dernier_num = Vente.objects.filter(date_vente__year=annee).count()
+        else:
+            dernier_num = 0
+        return f"FACT-{annee}-{dernier_num + 1:04d}"
+
 
 @login_required
 def liste_ventes(request):
-    ventes = Vente.objects.select_related('client', 'utilisateur').all()
-    q = request.GET.get('q', '')
+    ventes = (
+        Vente.objects.select_related('client', 'utilisateur')
+        .order_by('-date_vente')
+    )
+    q = request.GET.get('q', '').strip()
     if q:
         ventes = ventes.filter(
             Q(numero_facture__icontains=q) |
             Q(client__nom__icontains=q) |
             Q(client__prenom__icontains=q)
         )
+    statut_filtre = request.GET.get('statut', '')
+    if statut_filtre in ('validee', 'annulee'):
+        ventes = ventes.filter(statut=statut_filtre)
+    # ── Pagination : 20 ventes par page ──
+    paginator = Paginator(ventes, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
     return render(request, 'ventes/liste.html', {
-        'ventes': ventes,
+        'ventes': page_obj,
         'q': q,
+        'statut_filtre': statut_filtre,
     })
 
 @login_required
 def nouvelle_vente(request):
-    medicaments = Medicament.objects.filter(quantite_stock__gt=0)
-    clients = Client.objects.all()
+    medicaments = Medicament.objects.filter(quantite_stock__gt=0).order_by('nom')
+    clients = Client.objects.all().order_by('nom')
 
     if request.method == 'POST':
-        client_id = request.POST.get('client')
+        client_id = request.POST.get('client') or None
         medicament_ids = request.POST.getlist('medicament_id')
         quantites = request.POST.getlist('quantite')
-        
+
         mode_paiement = request.POST.get('mode_paiement', 'especes')
         try:
-            remise = float(request.POST.get('remise', 0))
-        except ValueError:
-            remise = 0
+            remise = Decimal(str(request.POST.get('remise', 0) or 0))
+        except InvalidOperation:
+            remise = Decimal('0')
+        if remise < 0:
+            remise = Decimal('0')
 
         if not medicament_ids:
             messages.error(request, "Ajoutez au moins un médicament !")
@@ -50,52 +82,85 @@ def nouvelle_vente(request):
                 'medicaments': medicaments, 'clients': clients
             })
 
-        # Créer la vente
-        vente = Vente.objects.create(
-            client_id=client_id if client_id else None,
-            utilisateur=request.user,
-            numero_facture=generer_numero_facture(),
-            total=0,
-            remise=remise,
-            mode_paiement=mode_paiement,
-            statut_paiement='paye' if mode_paiement == 'especes' else 'en_attente'
-        )
-
-        total = 0
-        for med_id, qte in zip(medicament_ids, quantites):
-            qte = int(qte)
-            med = Medicament.objects.get(pk=med_id)
-            if qte > med.quantite_stock:
-                messages.error(request, f"Stock insuffisant pour {med.nom} !")
-                vente.delete()
+        # ── Validation stricte AVANT toute écriture ──
+        lignes_valides = []
+        for med_id, qte_brute in zip(medicament_ids, quantites):
+            try:
+                qte = int(qte_brute)
+            except (ValueError, TypeError):
+                messages.error(request, "Quantité invalide détectée !")
                 return render(request, 'ventes/nouvelle.html', {
                     'medicaments': medicaments, 'clients': clients
                 })
-            LigneVente.objects.create(
-                vente=vente,
-                medicament=med,
-                quantite=qte,
-                prix_unitaire=med.prix_vente,
-                sous_total=qte * med.prix_vente
-            )
-            # Déduire du stock UNIQUEMENT si c'est en espèces.
-            # Pour l'API, on déduira lors de la réception du Webhook
-            if mode_paiement == 'especes':
-                med.quantite_stock -= qte
-                med.save()
-                
-            total += qte * med.prix_vente
+            if qte <= 0:
+                messages.error(request, "Les quantités doivent être supérieures à zéro !")
+                return render(request, 'ventes/nouvelle.html', {
+                    'medicaments': medicaments, 'clients': clients
+                })
+            try:
+                med = Medicament.objects.get(pk=med_id)
+            except Medicament.DoesNotExist:
+                messages.error(request, "Un médicament sélectionné n'existe plus !")
+                return render(request, 'ventes/nouvelle.html', {
+                    'medicaments': medicaments, 'clients': clients
+                })
+            if qte > med.quantite_stock:
+                messages.error(
+                    request,
+                    f"Stock insuffisant pour {med.nom} (dispo : {med.quantite_stock}) !"
+                )
+                return render(request, 'ventes/nouvelle.html', {
+                    'medicaments': medicaments, 'clients': clients
+                })
+            lignes_valides.append((med, qte))
 
-        vente.total = total
-        vente.save()
-        
+        total = sum(Decimal(med.prix_vente) * qte for med, qte in lignes_valides)
+        # ── Remise plafonnée au total (pas de net à payer négatif) ──
+        if remise > total:
+            messages.warning(
+                request,
+                f"Remise plafonnée au total de la vente ({total} FCFA)."
+            )
+            remise = total
+
+        # ── Création atomique : tout réussit ou rien n'est écrit ──
+        try:
+            with transaction.atomic():
+                vente = Vente.objects.create(
+                    client_id=client_id,
+                    utilisateur=request.user,
+                    numero_facture=generer_numero_facture(),
+                    total=total,
+                    remise=remise,
+                    mode_paiement=mode_paiement,
+                    statut_paiement='paye' if mode_paiement == 'especes' else 'en_attente'
+                )
+                for med, qte in lignes_valides:
+                    ligne = LigneVente(
+                        vente=vente,
+                        medicament=med,
+                        quantite=qte,
+                        prix_unitaire=med.prix_vente,
+                    )
+                    ligne.save()  # calcule sous_total
+                    # Stock déduit UNIQUEMENT si espèces.
+                    # Mobile money / carte : déduction à la réception du webhook.
+                    if mode_paiement == 'especes':
+                        Medicament.objects.filter(pk=med.pk).update(
+                            quantite_stock=F('quantite_stock') - qte
+                        )
+        except Exception:
+            messages.error(request, "Erreur lors de l'enregistrement — réessayez.")
+            return render(request, 'ventes/nouvelle.html', {
+                'medicaments': medicaments, 'clients': clients
+            })
+
         if mode_paiement != 'especes':
             from .services.payment import initier_paiement
             url_paiement = initier_paiement(vente)
             return redirect(url_paiement)
-        else:
-            messages.success(request, f"Vente {vente.numero_facture} enregistrée !")
-            return redirect('ventes:detail', pk=vente.pk)
+        messages.success(request, f"Vente {vente.numero_facture} enregistrée !")
+        return redirect('ventes:detail', pk=vente.pk)
 
     return render(request, 'ventes/nouvelle.html', {
         'medicaments': medicaments,
@@ -114,62 +179,140 @@ def detail_vente(request, pk):
         'params': params,
     })
 
+@login_required
+@pharmacien_required
+def annuler_vente(request, pk):
+    """Annule une vente validée et remet les quantités en stock."""
+    vente = get_object_or_404(Vente, pk=pk)
+    if vente.statut == 'annulee':
+        messages.info(request, f"La vente {vente.numero_facture} est déjà annulée.")
+        return redirect('ventes:detail', pk=vente.pk)
+    if request.method == 'POST':
+        motif = request.POST.get('motif', '').strip()
+        with transaction.atomic():
+            vente = Vente.objects.select_for_update().get(pk=pk)
+            if vente.statut == 'annulee':
+                messages.info(request, "Vente déjà annulée.")
+                return redirect('ventes:detail', pk=vente.pk)
+            # Remettre le stock — sauf si mobile money jamais payé
+            # (la vente 'en_attente' n'avait pas déduit de stock)
+            if vente.mode_paiement == 'especes' or vente.statut_paiement == 'paye':
+                for ligne in vente.lignes.select_related('medicament').all():
+                    Medicament.objects.filter(pk=ligne.medicament_id).update(
+                        quantite_stock=F('quantite_stock') + ligne.quantite
+                    )
+            vente.statut = 'annulee'
+            vente.motif_annulation = motif
+            vente.date_annulation = timezone.now()
+            vente.save(update_fields=['statut', 'motif_annulation', 'date_annulation'])
+        messages.success(request, f"Vente {vente.numero_facture} annulée — stock restauré.")
+        return redirect('ventes:detail', pk=vente.pk)
+    return render(request, 'ventes/annuler.html', {'vente': vente})
+
+
 # ── PAIMENT API (MOCK) ────────────────────────────────────────────────────────
 
+@login_required
 def mock_payment(request, pk):
     """
     Page fictive simulant l'interface de CinetPay / PaySika.
-    L'utilisateur clique sur "Payer" et on déclenche le webhook.
+    Signe le callback webhook avec HMAC (comme le ferait le vrai agrégateur).
     """
     vente = get_object_or_404(Vente, pk=pk)
     ref = request.GET.get('ref')
-    
+
     if request.method == 'POST':
         # On simule le webhook envoyé par l'agrégateur en arrière-plan
         import requests
         from django.urls import reverse
         webhook_url = request.build_absolute_uri(reverse('ventes:webhook'))
-        # Appel asynchrone / background normalement, mais ici on le fait en synchrone pour tester
+        # Appel asynchrone / background normalement, ici synchrone pour tester
+        # ── Simule un vrai agrégateur : il signe l'appel avec le secret ──
         try:
-            requests.post(webhook_url, json={'transaction_id': ref, 'status': 'ACCEPTED'})
-        except:
-            pass # Ignorer les erreurs réseau locales
+            import hashlib as _hashlib
+            import hmac as _hmac
+            _sig = _hmac.new(
+                (vente.secret_webhook or '').encode(),
+                f"{ref}:ACCEPTED".encode(),
+                _hashlib.sha256,
+            ).hexdigest()
+            requests.post(
+                webhook_url,
+                json={'transaction_id': ref, 'status': 'ACCEPTED', 'signature': _sig},
+                timeout=10,
+            )
+        except Exception:
+            pass  # Ignorer les erreurs réseau locales
             
         messages.success(request, "Paiement réussi via l'API !")
         return redirect('ventes:detail', pk=vente.pk)
         
     return render(request, 'ventes/mock_payment.html', {'vente': vente, 'ref': ref})
 
-
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+import hashlib
+import hmac
 import json
+import secrets
+
+
+def _signature_webhook(secret, transaction_id, status):
+    """Calcule la signature HMAC-SHA256 attendue pour un webhook."""
+    message = f"{transaction_id}:{status}".encode()
+    return hmac.new(secret.encode(), message, hashlib.sha256).hexdigest()
+
 
 @csrf_exempt
+@require_POST
 def webhook_paiement(request):
     """
     URL appelée par l'agrégateur (CinetPay, etc.) quand un paiement aboutit.
+    SÉCURISÉ : vérifie la signature HMAC de chaque appel.
     """
-    if request.method == 'POST':
+    try:
+        data = json.loads(request.body)
+        transaction_id = data.get('transaction_id')
+        status = data.get('status')
+        signature = data.get('signature', '')
+
+        if not transaction_id or not status:
+            return JsonResponse({'status': 'error', 'message': 'Données manquantes'}, status=400)
+
+        # Chercher la vente correspondante
         try:
-            data = json.loads(request.body)
-            transaction_id = data.get('transaction_id')
-            status = data.get('status')
-            
-            # Chercher la vente correspondante
             vente = Vente.objects.get(reference_paiement=transaction_id)
-            
-            if status == 'ACCEPTED' and vente.statut_paiement == 'en_attente':
+        except Vente.DoesNotExist:
+            # Référence inconnue → on répond 'ok' sans rien faire
+            # (évite de révéler quelles références existent à un attaquant)
+            return JsonResponse({'status': 'ok'})
+
+        # ── Vérification HMAC : bloque les appels forgés ──
+        attendue = _signature_webhook(
+            vente.secret_webhook or '', transaction_id, status
+        )
+        if not secrets.compare_digest(str(signature), attendue):
+            return JsonResponse(
+                {'status': 'error', 'message': 'Signature invalide'}, status=403
+            )
+
+        if status == 'ACCEPTED' and vente.statut_paiement == 'en_attente':
+            with transaction.atomic():
+                vente = Vente.objects.select_for_update().get(pk=vente.pk)
+                if vente.statut_paiement != 'en_attente':
+                    return JsonResponse({'status': 'ok'})  # déjà traité (idempotent)
                 vente.statut_paiement = 'paye'
-                vente.save()
-                
+                vente.save(update_fields=['statut_paiement'])
+
                 # C'est maintenant qu'on déduit le stock !
                 for ligne in vente.lignes.all():
-                    med = ligne.medicament
-                    med.quantite_stock -= ligne.quantite
-                    med.save()
-                    
-            return JsonResponse({'status': 'ok'})
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
-    return JsonResponse({'status': 'invalid method'}, status=405)
+                    Medicament.objects.filter(pk=ligne.medicament_id).update(
+                        quantite_stock=F('quantite_stock') - ligne.quantite
+                    )
+
+        return JsonResponse({'status': 'ok'})
+    except json.JSONDecodeError:
+        return JsonResponse({'status': 'error', 'message': 'JSON invalide'}, status=400)
+    except Exception as e:
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)

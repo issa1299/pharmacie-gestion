@@ -6,8 +6,15 @@ class MouvementStockForm(forms.ModelForm):
         model = MouvementStock
         fields = ['medicament', 'type_mouvement', 'quantite', 'motif']
         widgets = {
+            'medicament': forms.Select(attrs={'class': 'form-select'}),
+            'type_mouvement': forms.Select(attrs={'class': 'form-select'}),
+            'quantite': forms.NumberInput(attrs={
+                'class': 'form-control', 'min': 1,
+                'placeholder': 'Ex : 50',
+            }),
             'motif': forms.TextInput(attrs={
-                'placeholder': 'Ex: Livraison fournisseur, Vente...'
+                'class': 'form-control',
+                'placeholder': 'Ex : Livraison fournisseur, Vente...'
             }),
         }
 

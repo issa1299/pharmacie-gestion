@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
+from django.core.paginator import Paginator
+from django.db.models import Q
 from django.db.models.deletion import ProtectedError, RestrictedError
 from .models import Medicament, Categorie, Etagere
 from .forms import MedicamentForm, EtagereForm
@@ -11,18 +13,25 @@ from accounts.permissions import pharmacien_required
 
 @login_required
 def liste_medicaments(request):
-    medicaments = Medicament.objects.select_related('categorie', 'etagere').all()
-    q = request.GET.get('q', '')
+    medicaments = (
+        Medicament.objects.select_related('categorie', 'etagere')
+        .order_by('nom')
+    )
+    q = request.GET.get('q', '').strip()
     if q:
-        medicaments = medicaments.filter(nom__icontains=q)
+        medicaments = medicaments.filter(
+            Q(nom__icontains=q) | Q(code_barre__icontains=q)
+        )
     categorie_id = request.GET.get('categorie', '')
     if categorie_id:
         medicaments = medicaments.filter(categorie_id=categorie_id)
     etagere_id = request.GET.get('etagere', '')
     if etagere_id:
         medicaments = medicaments.filter(etagere_id=etagere_id)
+    paginator = Paginator(medicaments, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
     return render(request, 'medicaments/liste.html', {
-        'medicaments': medicaments,
+        'medicaments': page_obj,
         'categories': Categorie.objects.all(),
         'etageres': Etagere.objects.all(),
         'q': q,

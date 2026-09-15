@@ -73,14 +73,32 @@
 {% block content %}
 
 <!-- Boutons (cachés à l'impression) -->
-<div class="d-flex justify-content-center gap-2 mb-4 no-print">
+<div class="d-flex justify-content-center gap-2 mb-3 no-print flex-wrap">
   <a href="{% url 'ventes:liste' %}" class="btn btn-outline-secondary">
     <i class="bi bi-arrow-left me-1"></i>Retour
   </a>
   <button onclick="window.print()" class="btn btn-primary">
     <i class="bi bi-printer me-1"></i>Imprimer
   </button>
+  {% if vente.statut == 'validee' and is_pharmacien_or_more %}
+  <a href="{% url 'ventes:annuler' vente.pk %}" class="btn btn-outline-danger">
+    <i class="bi bi-x-circle me-1"></i>Annuler la vente
+  </a>
+  {% endif %}
 </div>
+
+{% if vente.statut == 'annulee' %}
+<div class="alert alert-secondary text-center mx-auto mb-3" style="max-width:480px;">
+  <i class="bi bi-x-octagon me-1"></i>
+  Vente annulée{% if vente.date_annulation %} le {{ vente.date_annulation|date:site_params.format_date }}{% endif %}{% if vente.motif_annulation %} — motif : « {{ vente.motif_annulation }} »{% endif %}
+</div>
+{% elif vente.statut_paiement == 'en_attente' %}
+<div class="alert alert-warning text-center mx-auto mb-3" style="max-width:480px;">
+  <i class="bi bi-hourglass-split me-1"></i>
+  Paiement {{ vente.get_mode_paiement_display }} en attente.
+  <a href="{% url 'relancer_paiement' vente.pk %}" class="alert-link">Relancer le paiement →</a>
+</div>
+{% endif %}
 
 <!-- TICKET -->
 <div class="ticket-wrapper">

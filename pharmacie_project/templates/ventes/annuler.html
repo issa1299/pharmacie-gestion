@@ -1,0 +1,44 @@
+{% extends 'base.html' %}
+{% block title %}Annuler {{ vente.numero_facture }} — PharmaGest{% endblock %}
+{% block page_title %}Annuler la vente{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-12 col-md-7 col-lg-6">
+    <div class="card">
+      <div class="card-header-custom">
+        <h5><i class="bi bi-x-octagon me-2 text-danger"></i>Annuler {{ vente.numero_facture }}</h5>
+        <a href="{% url 'ventes:detail' vente.pk %}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-left me-1"></i>Retour
+        </a>
+      </div>
+      <div class="p-4">
+        <div class="alert alert-warning d-flex gap-2 align-items-start">
+          <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+          <div>
+            <strong>Cette action est irréversible.</strong><br>
+            Les quantités vendues seront <strong>remises en stock</strong> :
+            <ul class="mb-0 mt-2">
+              {% for ligne in vente.lignes.all %}
+              <li>{{ ligne.medicament.nom }} — x{{ ligne.quantite }}</li>
+              {% endfor %}
+            </ul>
+            <div class="mt-2">Net à payer : <strong>{{ vente.net_a_payer|floatformat:0 }} {{ site_params.devise }}</strong></div>
+          </div>
+        </div>
+        <form method="post">
+          {% csrf_token %}
+          <label class="form-label fw-semibold">Motif de l'annulation <span class="text-muted">(optionnel)</span></label>
+          <textarea name="motif" rows="3" class="form-control" placeholder="Ex : erreur de saisie, client parti, doublon..."></textarea>
+          <div class="d-flex gap-2 justify-content-end mt-3">
+            <a href="{% url 'ventes:detail' vente.pk %}" class="btn btn-outline-secondary">Garder la vente</a>
+            <button type="submit" class="btn btn-danger">
+              <i class="bi bi-x-circle me-1"></i>Confirmer l'annulation
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

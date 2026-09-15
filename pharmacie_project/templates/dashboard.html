@@ -5,6 +5,54 @@
 
 {% block content %}
 
+<!-- ── RECHERCHE RAPIDE ───────────────────────── -->
+<div class="card mb-4">
+  <div class="p-3">
+    <div class="position-relative">
+      <i class="bi bi-search position-absolute" style="left:14px; top:50%; transform:translateY(-50%); color:#888;"></i>
+      <input type="text" id="quickSearch" class="form-control" autocomplete="off"
+             placeholder="Recherche rapide : médicament, n° facture, client… (min. 2 lettres)"
+             style="padding-left:38px; height:46px; font-size:14px;">
+      <div id="quickResults" class="list-group position-absolute w-100 shadow"
+           style="z-index:50; top:52px; display:none; max-height:320px; overflow-y:auto;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const input = document.getElementById('quickSearch');
+  const box = document.getElementById('quickResults');
+  let timer = null;
+  input.addEventListener('input', () => {
+    clearTimeout(timer);
+    const q = input.value.trim();
+    if (q.length < 2) { box.style.display = 'none'; box.innerHTML = ''; return; }
+    timer = setTimeout(async () => {
+      try {
+        const res = await fetch("{% url 'recherche_globale' %}?q=" + encodeURIComponent(q));
+        const data = await res.json();
+        if (!data.results.length) {
+          box.innerHTML = '<div class="list-group-item text-muted">Aucun résultat.</div>';
+        } else {
+          box.innerHTML = data.results.map(r =>
+            `<a href="${r.url}" class="list-group-item list-group-item-action d-flex gap-2 align-items-center">
+               <i class="bi bi-${r.icone} text-success"></i>
+               <span><strong>${r.label}</strong><br><small class="text-muted">${r.detail}</small></span>
+               <span class="badge bg-light text-dark ms-auto">${r.type}</span>
+             </a>`
+          ).join('');
+        }
+        box.style.display = 'block';
+      } catch (e) { box.style.display = 'none'; }
+    }, 250);
+  });
+  document.addEventListener('click', (e) => {
+    if (!box.contains(e.target) && e.target !== input) box.style.display = 'none';
+  });
+})();
+</script>
+
 <!-- ── CARTES STATISTIQUES ───────────────────── -->
 <div class="row g-3 mb-4">
 

@@ -26,6 +26,8 @@ urlpatterns = [
     path('gestion/', include('accounts.urls', namespace='accounts')),
 
     # Vos apps
+    path('recherche/', views.recherche_globale, name='recherche_globale'),
+    path('ventes/<int:pk>/relancer-paiement/', views.relancer_paiement, name='relancer_paiement'),
     path('medicaments/', include('medicaments.urls', namespace='medicaments')),
     path('stock/', include('stock.urls', namespace='stock')),
     path('ventes/', include('ventes.urls', namespace='ventes')),

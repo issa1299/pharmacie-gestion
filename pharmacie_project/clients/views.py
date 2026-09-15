@@ -1,14 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q
+from django.core.paginator import Paginator
+from django.db.models import Q, Count, Sum
 from .models import Client
 from .forms import ClientForm
 
 @login_required
 def liste_clients(request):
-    clients = Client.objects.all()
-    q = request.GET.get('q', '')
+    clients = Client.objects.annotate(nb_ventes=Count('ventes')).order_by('nom')
+    q = request.GET.get('q', '').strip()
     if q:
         clients = clients.filter(
             Q(nom__icontains=q) |
@@ -16,9 +17,30 @@ def liste_clients(request):
             Q(telephone__icontains=q) |
             Q(email__icontains=q)
         )
+    paginator = Paginator(clients, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
     return render(request, 'clients/liste.html', {
-        'clients': clients,
+        'clients': page_obj,
         'q': q,
+    })
+
+
+@login_required
+def detail_client(request, pk):
+    """Fiche client enrichie : historique d'achats + statistiques."""
+    client = get_object_or_404(Client, pk=pk)
+    ventes = client.ventes.select_related('utilisateur').order_by('-date_vente')
+    stats = ventes.filter(statut='validee').aggregate(
+        total_achats=Sum('total'),
+        nb_achats=Count('id'),
+    )
+    dernieres = ventes[:10]
+    return render(request, 'clients/detail.html', {
+        'client': client,
+        'ventes': dernieres,
+        'nb_ventes': ventes.count(),
+        'total_achats': stats['total_achats'] or 0,
+        'nb_achats_valides': stats['nb_achats'] or 0,
     })
 
 @login_required

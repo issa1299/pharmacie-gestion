@@ -1,19 +1,23 @@
+import secrets
 import uuid
 
-# Configuration fictive pour l'API (à remplacer par les vraies clés CinetPay/PaySika/etc)
-API_KEY = "VOTRE_API_KEY_ICI"
-SITE_ID = "VOTRE_SITE_ID_ICI"
+
+def _generer_secret_webhook():
+    """Secret unique par vente — sert à signer les appels webhook (HMAC)."""
+    return secrets.token_hex(32)
+
 
 def initier_paiement(vente):
     """
     Simule l'initialisation d'un paiement avec un agrégateur.
     Retourne l'URL de paiement ou les informations nécessaires.
     """
-    # 1. Générer une référence de transaction unique
+    # 1. Générer une référence de transaction unique + secret HMAC
     transaction_id = str(uuid.uuid4())
     vente.reference_paiement = transaction_id
+    vente.secret_webhook = _generer_secret_webhook()
     vente.statut_paiement = 'en_attente'
-    vente.save()
+    vente.save(update_fields=['reference_paiement', 'secret_webhook', 'statut_paiement'])
 
     # 2. Préparer les données pour l'API (montant, devise, ref, etc.)
     # montant = vente.total - vente.remise

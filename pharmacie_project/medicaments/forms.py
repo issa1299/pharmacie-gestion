@@ -1,7 +1,26 @@
 from django import forms
 from .models import Medicament, Categorie, Etagere
 
-class MedicamentForm(forms.ModelForm):
+
+# ── Style commun : tous les champs Bootstrap + placeholders utiles ──
+_STYLE_TEXT = {'class': 'form-control'}
+_STYLE_SELECT = {'class': 'form-select'}
+
+
+class _StyledModelForm(forms.ModelForm):
+    """Ajoute automatiquement form-control / form-select à chaque champ."""
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for name, field in self.fields.items():
+            widget = field.widget
+            css = _STYLE_SELECT if isinstance(
+                widget, (forms.Select, forms.SelectMultiple)
+            ) else _STYLE_TEXT
+            widget.attrs.update({k: v for k, v in css.items() if k not in widget.attrs})
+
+
+class MedicamentForm(_StyledModelForm):
     class Meta:
         model = Medicament
         fields = [
@@ -10,9 +29,29 @@ class MedicamentForm(forms.ModelForm):
             'quantite_stock', 'seuil_alerte'
         ]
         widgets = {
-            'date_expiration': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'nom': forms.TextInput(attrs={
+                'placeholder': 'Ex : Paracétamol 500 mg', 'autofocus': True}),
+            'code_barre': forms.TextInput(attrs={
+                'placeholder': 'Scanner ou saisir le code-barres…'}),
             'description': forms.Textarea(attrs={'rows': 3}),
+            'date_expiration': forms.DateInput(
+                attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'prix_achat': forms.NumberInput(attrs={'min': 0, 'step': '0.01'}),
+            'prix_vente': forms.NumberInput(attrs={'min': 0, 'step': '0.01'}),
+            'quantite_stock': forms.NumberInput(attrs={'min': 0}),
+            'seuil_alerte': forms.NumberInput(attrs={'min': 0}),
         }
+
+    def clean(self):
+        cleaned = super().clean()
+        achat = cleaned.get('prix_achat')
+        vente = cleaned.get('prix_vente')
+        if achat is not None and vente is not None and vente < achat:
+            self.add_error(
+                'prix_vente',
+                "Le prix de vente est inférieur au prix d'achat — vérifiez la marge."
+            )
+        return cleaned
 
 
 class EtagereForm(forms.ModelForm):

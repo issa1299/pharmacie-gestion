@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from medicaments.models import Medicament
 from clients.models import Client
 
+
 class Vente(models.Model):
     STATUT_CHOICES = [
         ('validee', 'Validée'),
@@ -30,12 +31,17 @@ class Vente(models.Model):
     numero_facture = models.CharField(max_length=50, unique=True)
     total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     remise = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-    
+
     mode_paiement = models.CharField(max_length=20, choices=MODE_PAIEMENT_CHOICES, default='especes')
     statut_paiement = models.CharField(max_length=20, choices=STATUT_PAIEMENT_CHOICES, default='paye')
     reference_paiement = models.CharField(max_length=100, blank=True, null=True)
+    # ── Sécurité webhook : signature HMAC propre à chaque vente ──
+    secret_webhook = models.CharField(max_length=64, blank=True, null=True)
 
     statut = models.CharField(max_length=20, choices=STATUT_CHOICES, default='validee')
+    # ── Annulation : motif + date remettent le stock ──
+    motif_annulation = models.CharField(max_length=255, blank=True, default='')
+    date_annulation = models.DateTimeField(null=True, blank=True)
     date_vente = models.DateTimeField(auto_now_add=True)
 
     @property
