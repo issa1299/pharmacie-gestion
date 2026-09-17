@@ -51,6 +51,13 @@
             </select>
           </div>
 
+          <div class="mb-3" id="expiration-field" style="display:none;">
+            <label class="form-label fw-semibold">Nouvelle date d'expiration</label>
+            <input type="date" name="date_expiration" class="form-control"
+                   value="{{ form.date_expiration.value|default:'' }}">
+            <div class="form-text">Optionnel : met à jour la date d'expiration du médicament</div>
+          </div>
+
           <div class="mb-3">
             <label class="form-label fw-semibold">Quantité *</label>
             <input type="number" name="quantite" class="form-control"
@@ -78,10 +85,13 @@
 <script>
   const typeSelect = document.getElementById('type-mouvement-select');
   const fourField = document.getElementById('fournisseur-field');
-  function toggleFournisseur() {
-    fourField.style.display = typeSelect.value === 'entree' ? 'block' : 'none';
+  const expField = document.getElementById('expiration-field');
+  function toggleFields() {
+    const isEntree = typeSelect.value === 'entree';
+    fourField.style.display = isEntree ? 'block' : 'none';
+    expField.style.display = isEntree ? 'block' : 'none';
   }
-  typeSelect.addEventListener('change', toggleFournisseur);
-  toggleFournisseur();
+  typeSelect.addEventListener('change', toggleFields);
+  toggleFields();
 </script>
 {% endblock %}

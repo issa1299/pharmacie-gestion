@@ -3,6 +3,15 @@ from .models import MouvementStock
 
 
 class MouvementStockForm(forms.ModelForm):
+    date_expiration = forms.DateField(
+        required=False,
+        widget=forms.DateInput(attrs={
+            'class': 'form-control', 'type': 'date',
+        }),
+        label="Nouvelle date d'expiration",
+        help_text="Optionnel : mettre à jour la date d'expiration du médicament",
+    )
+
     class Meta:
         model = MouvementStock
         fields = ['medicament', 'type_mouvement', 'fournisseur', 'quantite', 'motif']

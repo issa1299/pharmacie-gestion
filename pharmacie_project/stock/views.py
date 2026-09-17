@@ -93,9 +93,11 @@ def ajouter_mouvement(request):
                         'form': form, 'fournisseurs': Fournisseur.objects.all(),
                     })
                 if type_mvt == 'entree':
-                    Medicament.objects.filter(pk=med.pk).update(
-                        quantite_stock=F('quantite_stock') + qte
-                    )
+                    update_fields = {'quantite_stock': F('quantite_stock') + qte}
+                    date_exp = form.cleaned_data.get('date_expiration')
+                    if date_exp:
+                        update_fields['date_expiration'] = date_exp
+                    Medicament.objects.filter(pk=med.pk).update(**update_fields)
                 elif type_mvt == 'sortie':
                     Medicament.objects.filter(pk=med.pk).update(
                         quantite_stock=F('quantite_stock') - qte
