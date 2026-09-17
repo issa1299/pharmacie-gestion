@@ -2,8 +2,10 @@
 Commande pour peupler la base avec des catégories et médicaments de base.
 
     python manage.py seed_medicaments
+    python manage.py seed_medicaments --update  # met à jour les dates d'expiration
 """
 
+from datetime import date
 from django.core.management.base import BaseCommand
 from medicaments.models import Categorie, Etagere, Medicament
 
@@ -35,62 +37,70 @@ ETAGERES = [
 
 MEDICAMENTS = [
     # Antalgiques
-    {'nom': 'Paracétamol 500mg', 'categorie': 'Antalgiques', 'prix_achat': 100, 'prix_vente': 250, 'stock': 50, 'seuil': 10, 'description': 'Antalgique antipyrétique'},
-    {'nom': 'Paracétamol 1g', 'categorie': 'Antalgiques', 'prix_achat': 150, 'prix_vente': 350, 'stock': 30, 'seuil': 8, 'description': 'Antalgique antipyrétique dosage fort'},
-    {'nom': 'Ibuprofène 400mg', 'categorie': 'Anti-inflammatoires', 'prix_achat': 120, 'prix_vente': 300, 'stock': 25, 'seuil': 8, 'description': 'Anti-inflammatoire non stéroïdien'},
-    {'nom': 'Aspirine 500mg', 'categorie': 'Antalgiques', 'prix_achat': 80, 'prix_vente': 200, 'stock': 40, 'seuil': 10, 'description': 'Antalgique antipyrétique antiagrégant'},
-    {'nom': 'Doliprane 1000mg', 'categorie': 'Antalgiques', 'prix_achat': 200, 'prix_vente': 500, 'stock': 20, 'seuil': 5, 'description': 'Paracétamol 1g - Marque'},
-    {'nom': 'Efferalgan 500mg', 'categorie': 'Antalgiques', 'prix_achat': 180, 'prix_vente': 450, 'stock': 15, 'seuil': 5, 'description': 'Paracétamol effervescent'},
-    {'nom': 'Advil 200mg', 'categorie': 'Anti-inflammatoires', 'prix_achat': 250, 'prix_vente': 600, 'stock': 12, 'seuil': 4, 'description': 'Ibuprofène - Marque'},
+    {'nom': 'Paracétamol 500mg', 'categorie': 'Antalgiques', 'prix_achat': 100, 'prix_vente': 250, 'stock': 50, 'seuil': 10, 'description': 'Antalgique antipyrétique', 'expiration': '2027-06-15'},
+    {'nom': 'Paracétamol 1g', 'categorie': 'Antalgiques', 'prix_achat': 150, 'prix_vente': 350, 'stock': 30, 'seuil': 8, 'description': 'Antalgique antipyrétique dosage fort', 'expiration': '2027-03-20'},
+    {'nom': 'Ibuprofène 400mg', 'categorie': 'Anti-inflammatoires', 'prix_achat': 120, 'prix_vente': 300, 'stock': 25, 'seuil': 8, 'description': 'Anti-inflammatoire non stéroïdien', 'expiration': '2027-09-10'},
+    {'nom': 'Aspirine 500mg', 'categorie': 'Antalgiques', 'prix_achat': 80, 'prix_vente': 200, 'stock': 40, 'seuil': 10, 'description': 'Antalgique antipyrétique antiagrégant', 'expiration': '2028-01-05'},
+    {'nom': 'Doliprane 1000mg', 'categorie': 'Antalgiques', 'prix_achat': 200, 'prix_vente': 500, 'stock': 20, 'seuil': 5, 'description': 'Paracétamol 1g - Marque', 'expiration': '2027-08-22'},
+    {'nom': 'Efferalgan 500mg', 'categorie': 'Antalgiques', 'prix_achat': 180, 'prix_vente': 450, 'stock': 15, 'seuil': 5, 'description': 'Paracétamol effervescent', 'expiration': '2027-04-18'},
+    {'nom': 'Advil 200mg', 'categorie': 'Anti-inflammatoires', 'prix_achat': 250, 'prix_vente': 600, 'stock': 12, 'seuil': 4, 'description': 'Ibuprofène - Marque', 'expiration': '2027-11-30'},
     # Antibiotiques
-    {'nom': 'Amoxicilline 1g', 'categorie': 'Antibiotiques', 'prix_achat': 300, 'prix_vente': 700, 'stock': 20, 'seuil': 5, 'description': 'Antibiotique pénicilline'},
-    {'nom': 'Azithromicine 500mg', 'categorie': 'Antibiotiques', 'prix_achat': 500, 'prix_vente': 1200, 'stock': 15, 'seuil': 4, 'description': 'Antibiotique macrolide'},
-    {'nom': 'Ciprofloxacine 500mg', 'categorie': 'Antibiotiques', 'prix_achat': 400, 'prix_vente': 900, 'stock': 18, 'seuil': 5, 'description': 'Antibiotique fluoroquinolone'},
-    {'nom': 'Métronidazole 500mg', 'categorie': 'Antibiotiques', 'prix_achat': 150, 'prix_vente': 400, 'stock': 22, 'seuil': 6, 'description': 'Antibiotique antiparasitaire'},
-    {'nom': 'Augmentin 1g', 'categorie': 'Antibiotiques', 'prix_achat': 600, 'prix_vente': 1500, 'stock': 10, 'seuil': 3, 'description': 'Amoxicilline + acide clavulanique'},
+    {'nom': 'Amoxicilline 1g', 'categorie': 'Antibiotiques', 'prix_achat': 300, 'prix_vente': 700, 'stock': 20, 'seuil': 5, 'description': 'Antibiotique pénicilline', 'expiration': '2026-12-01'},
+    {'nom': 'Azithromicine 500mg', 'categorie': 'Antibiotiques', 'prix_achat': 500, 'prix_vente': 1200, 'stock': 15, 'seuil': 4, 'description': 'Antibiotique macrolide', 'expiration': '2027-05-14'},
+    {'nom': 'Ciprofloxacine 500mg', 'categorie': 'Antibiotiques', 'prix_achat': 400, 'prix_vente': 900, 'stock': 18, 'seuil': 5, 'description': 'Antibiotique fluoroquinolone', 'expiration': '2027-07-25'},
+    {'nom': 'Métronidazole 500mg', 'categorie': 'Antibiotiques', 'prix_achat': 150, 'prix_vente': 400, 'stock': 22, 'seuil': 6, 'description': 'Antibiotique antiparasitaire', 'expiration': '2027-02-28'},
+    {'nom': 'Augmentin 1g', 'categorie': 'Antibiotiques', 'prix_achat': 600, 'prix_vente': 1500, 'stock': 10, 'seuil': 3, 'description': 'Amoxicilline + acide clavulanique', 'expiration': '2026-10-15'},
     # Antipaludiques
-    {'nom': 'Coartem 20/120', 'categorie': 'Antipaludiques', 'prix_achat': 200, 'prix_vente': 500, 'stock': 30, 'seuil': 10, 'description': 'Arthéméter/Luméfantrine - Traitement paludisme'},
-    {'nom': 'Nivaquine 100mg', 'categorie': 'Antipaludiques', 'prix_achat': 100, 'prix_vente': 250, 'stock': 25, 'seuil': 8, 'description': 'Chloroquine - Prophylaxie'},
-    {'nom': 'Fansidar', 'categorie': 'Antipaludiques', 'prix_achat': 300, 'prix_vente': 750, 'stock': 15, 'seuil': 5, 'description': 'Sulfadoxine + Pyriméthamine'},
-    {'nom': 'Malarone', 'categorie': 'Antipaludiques', 'prix_achat': 800, 'prix_vente': 2000, 'stock': 8, 'seuil': 3, 'description': 'Atovaquone/Proguanil - Prophylaxie'},
-    # Antipyrétiques
-    {'nom': 'Nurofen 200mg', 'categorie': 'Anti-inflammatoires', 'prix_achat': 200, 'prix_vente': 500, 'stock': 18, 'seuil': 5, 'description': 'Ibuprofène - Marque'},
-    {'nom': 'Diclac 50mg', 'categorie': 'Anti-inflammatoires', 'prix_achat': 250, 'prix_vente': 600, 'stock': 12, 'seuil': 4, 'description': 'Diclofénac'},
+    {'nom': 'Coartem 20/120', 'categorie': 'Antipaludiques', 'prix_achat': 200, 'prix_vente': 500, 'stock': 30, 'seuil': 10, 'description': 'Arthéméter/Luméfantrine - Traitement paludisme', 'expiration': '2027-12-20'},
+    {'nom': 'Nivaquine 100mg', 'categorie': 'Antipaludiques', 'prix_achat': 100, 'prix_vente': 250, 'stock': 25, 'seuil': 8, 'description': 'Chloroquine - Prophylaxie', 'expiration': '2028-03-10'},
+    {'nom': 'Fansidar', 'categorie': 'Antipaludiques', 'prix_achat': 300, 'prix_vente': 750, 'stock': 15, 'seuil': 5, 'description': 'Sulfadoxine + Pyriméthamine', 'expiration': '2027-06-30'},
+    {'nom': 'Malarone', 'categorie': 'Antipaludiques', 'prix_achat': 800, 'prix_vente': 2000, 'stock': 8, 'seuil': 3, 'description': 'Atovaquone/Proguanil - Prophylaxie', 'expiration': '2027-09-05'},
+    # Anti-inflammatoires
+    {'nom': 'Nurofen 200mg', 'categorie': 'Anti-inflammatoires', 'prix_achat': 200, 'prix_vente': 500, 'stock': 18, 'seuil': 5, 'description': 'Ibuprofène - Marque', 'expiration': '2027-10-12'},
+    {'nom': 'Diclac 50mg', 'categorie': 'Anti-inflammatoires', 'prix_achat': 250, 'prix_vente': 600, 'stock': 12, 'seuil': 4, 'description': 'Diclofénac', 'expiration': '2027-04-28'},
     # Vitamines
-    {'nom': 'Vitamine C 1g', 'categorie': 'Vitamines et compléments', 'prix_achat': 150, 'prix_vente': 400, 'stock': 35, 'seuil': 10, 'description': 'Complément vitamine C'},
-    {'nom': 'Supradyn', 'categorie': 'Vitamines et compléments', 'prix_achat': 300, 'prix_vente': 700, 'stock': 20, 'seuil': 5, 'description': 'Multivitamines'},
-    {'nom': 'Fer + Acide folique', 'categorie': 'Vitamines et compléments', 'prix_achat': 200, 'prix_vente': 500, 'stock': 25, 'seuil': 8, 'description': 'Complément en fer'},
-    {'nom': 'Omnibionta', 'categorie': 'Vitamines et compléments', 'prix_achat': 400, 'prix_vente': 900, 'stock': 15, 'seuil': 4, 'description': 'Multivitamines + Minéraux'},
+    {'nom': 'Vitamine C 1g', 'categorie': 'Vitamines et compléments', 'prix_achat': 150, 'prix_vente': 400, 'stock': 35, 'seuil': 10, 'description': 'Complément vitamine C', 'expiration': '2028-06-01'},
+    {'nom': 'Supradyn', 'categorie': 'Vitamines et compléments', 'prix_achat': 300, 'prix_vente': 700, 'stock': 20, 'seuil': 5, 'description': 'Multivitamines', 'expiration': '2028-02-15'},
+    {'nom': 'Fer + Acide folique', 'categorie': 'Vitamines et compléments', 'prix_achat': 200, 'prix_vente': 500, 'stock': 25, 'seuil': 8, 'description': 'Complément en fer', 'expiration': '2028-04-20'},
+    {'nom': 'Omnibionta', 'categorie': 'Vitamines et compléments', 'prix_achat': 400, 'prix_vente': 900, 'stock': 15, 'seuil': 4, 'description': 'Multivitamines + Minéraux', 'expiration': '2027-12-10'},
     # Dermatologie
-    {'nom': 'Biafine 93g', 'categorie': 'Dermatologie', 'prix_achat': 500, 'prix_vente': 1200, 'stock': 10, 'seuil': 3, 'description': 'Émulsion cicatrisante'},
-    {'nom': 'Fucidine 2%', 'categorie': 'Dermatologie', 'prix_achat': 600, 'prix_vente': 1400, 'stock': 8, 'seuil': 3, 'description': 'Crème antibactérienne'},
-    {'nom': 'Dercutene', 'categorie': 'Dermatologie', 'prix_achat': 350, 'prix_vente': 800, 'stock': 12, 'seuil': 4, 'description': 'Crème solaire'},
+    {'nom': 'Biafine 93g', 'categorie': 'Dermatologie', 'prix_achat': 500, 'prix_vente': 1200, 'stock': 10, 'seuil': 3, 'description': 'Émulsion cicatrisante', 'expiration': '2027-08-05'},
+    {'nom': 'Fucidine 2%', 'categorie': 'Dermatologie', 'prix_achat': 600, 'prix_vente': 1400, 'stock': 8, 'seuil': 3, 'description': 'Crème antibactérienne', 'expiration': '2027-01-22'},
+    {'nom': 'Dercutene', 'categorie': 'Dermatologie', 'prix_achat': 350, 'prix_vente': 800, 'stock': 12, 'seuil': 4, 'description': 'Crème solaire', 'expiration': '2028-05-18'},
     # Gastro
-    {'nom': 'Smecta', 'categorie': 'Gastro-entérologie', 'prix_achat': 200, 'prix_vente': 500, 'stock': 20, 'seuil': 6, 'description': 'Anti-diarrhéique'},
-    {'nom': 'Imodium', 'categorie': 'Gastro-entérologie', 'prix_achat': 300, 'prix_vente': 700, 'stock': 15, 'seuil': 5, 'description': 'Lopéramide - Anti-diarrhéique'},
-    {'nom': 'Gaviscon', 'categorie': 'Gastro-entérologie', 'prix_achat': 250, 'prix_vente': 600, 'stock': 18, 'seuil': 5, 'description': 'Anti-acide gastro'},
-    {'nom': 'Maalox', 'categorie': 'Gastro-entérologie', 'prix_achat': 200, 'prix_vente': 450, 'stock': 22, 'seuil': 6, 'description': 'Anti-acide'},
+    {'nom': 'Smecta', 'categorie': 'Gastro-entérologie', 'prix_achat': 200, 'prix_vente': 500, 'stock': 20, 'seuil': 6, 'description': 'Anti-diarrhéique', 'expiration': '2027-07-14'},
+    {'nom': 'Imodium', 'categorie': 'Gastro-entérologie', 'prix_achat': 300, 'prix_vente': 700, 'stock': 15, 'seuil': 5, 'description': 'Lopéramide - Anti-diarrhéique', 'expiration': '2027-11-08'},
+    {'nom': 'Gaviscon', 'categorie': 'Gastro-entérologie', 'prix_achat': 250, 'prix_vente': 600, 'stock': 18, 'seuil': 5, 'description': 'Anti-acide gastro', 'expiration': '2028-01-25'},
+    {'nom': 'Maalox', 'categorie': 'Gastro-entérologie', 'prix_achat': 200, 'prix_vente': 450, 'stock': 22, 'seuil': 6, 'description': 'Anti-acide', 'expiration': '2027-09-30'},
     # Respiratoire
-    {'nom': 'Ventoline 100µg', 'categorie': 'Respiratoire', 'prix_achat': 800, 'prix_vente': 1800, 'stock': 10, 'seuil': 3, 'description': 'Bronchodilatateur'},
-    {'nom': 'Ambrosol 30mg', 'categorie': 'Respiratoire', 'prix_achat': 200, 'prix_vente': 500, 'stock': 15, 'seuil': 5, 'description': 'Mucolytique'},
-    {'nom': 'Darcohol', 'categorie': 'Respiratoire', 'prix_achat': 150, 'prix_vente': 350, 'stock': 20, 'seuil': 6, 'description': 'Sirop antitussif'},
+    {'nom': 'Ventoline 100µg', 'categorie': 'Respiratoire', 'prix_achat': 800, 'prix_vente': 1800, 'stock': 10, 'seuil': 3, 'description': 'Bronchodilatateur', 'expiration': '2027-05-20'},
+    {'nom': 'Ambrosol 30mg', 'categorie': 'Respiratoire', 'prix_achat': 200, 'prix_vente': 500, 'stock': 15, 'seuil': 5, 'description': 'Mucolytique', 'expiration': '2027-10-05'},
+    {'nom': 'Darcohol', 'categorie': 'Respiratoire', 'prix_achat': 150, 'prix_vente': 350, 'stock': 20, 'seuil': 6, 'description': 'Sirop antitussif', 'expiration': '2028-03-15'},
     # Cardiovasculaire
-    {'nom': 'Kardégic 75mg', 'categorie': 'Cardiovasculaire', 'prix_achat': 300, 'prix_vente': 700, 'stock': 15, 'seuil': 5, 'description': 'Antiagrégant plaquettaire'},
-    {'nom': 'Amlodipine 5mg', 'categorie': 'Cardiovasculaire', 'prix_achat': 250, 'prix_vente': 600, 'stock': 12, 'seuil': 4, 'description': 'Antihypertenseur'},
+    {'nom': 'Kardégic 75mg', 'categorie': 'Cardiovasculaire', 'prix_achat': 300, 'prix_vente': 700, 'stock': 15, 'seuil': 5, 'description': 'Antiagrégant plaquettaire', 'expiration': '2027-06-25'},
+    {'nom': 'Amlodipine 5mg', 'categorie': 'Cardiovasculaire', 'prix_achat': 250, 'prix_vente': 600, 'stock': 12, 'seuil': 4, 'description': 'Antihypertenseur', 'expiration': '2027-08-12'},
     # ORL
-    {'nom': 'Otriven 0.05%', 'categorie': 'ORL', 'prix_achat': 200, 'prix_vente': 450, 'stock': 18, 'seuil': 5, 'description': 'Spray nasal décongestionnant'},
-    {'nom': 'Otolyse', 'categorie': 'ORL', 'prix_achat': 250, 'prix_vente': 550, 'stock': 12, 'seuil': 4, 'description': 'Gouttes auriculaires'},
+    {'nom': 'Otriven 0.05%', 'categorie': 'ORL', 'prix_achat': 200, 'prix_vente': 450, 'stock': 18, 'seuil': 5, 'description': 'Spray nasal décongestionnant', 'expiration': '2027-04-10'},
+    {'nom': 'Otolyse', 'categorie': 'ORL', 'prix_achat': 250, 'prix_vente': 550, 'stock': 12, 'seuil': 4, 'description': 'Gouttes auriculaires', 'expiration': '2027-02-14'},
     # Pédiatrie
-    {'nom': 'Doliprane Enfant 2.4%', 'categorie': 'Pédiatrie', 'prix_achat': 300, 'prix_vente': 700, 'stock': 15, 'seuil': 5, 'description': 'Paracétamol pédiatrique sirop'},
-    {'nom': 'Nurofen Enfant', 'categorie': 'Pédiatrie', 'prix_achat': 350, 'prix_vente': 800, 'stock': 12, 'seuil': 4, 'description': 'Ibuprofène pédiatrique'},
-    {'nom': 'Spasfon Enfant', 'categorie': 'Pédiatrie', 'prix_achat': 200, 'prix_vente': 500, 'stock': 10, 'seuil': 3, 'description': 'Antispasmodique pédiatrique'},
+    {'nom': 'Doliprane Enfant 2.4%', 'categorie': 'Pédiatrie', 'prix_achat': 300, 'prix_vente': 700, 'stock': 15, 'seuil': 5, 'description': 'Paracétamol pédiatrique sirop', 'expiration': '2027-07-08'},
+    {'nom': 'Nurofen Enfant', 'categorie': 'Pédiatrie', 'prix_achat': 350, 'prix_vente': 800, 'stock': 12, 'seuil': 4, 'description': 'Ibuprofène pédiatrique', 'expiration': '2027-12-22'},
+    {'nom': 'Spasfon Enfant', 'categorie': 'Pédiatrie', 'prix_achat': 200, 'prix_vente': 500, 'stock': 10, 'seuil': 3, 'description': 'Antispasmodique pédiatrique', 'expiration': '2028-02-28'},
 ]
 
 
 class Command(BaseCommand):
     help = 'Peuple la base avec des catégories, étagères et médicaments de base'
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            '--update', action='store_true',
+            help='Met à jour les dates d\'expiration des médicaments existants',
+        )
+
     def handle(self, *args, **options):
+        update_mode = options['update']
+
         # Catégories
         cats_created = 0
         for nom, desc in CATEGORIES:
@@ -113,13 +123,29 @@ class Command(BaseCommand):
         # Médicaments
         cats_map = {c.nom: c for c in Categorie.objects.all()}
         etgs = list(Etagere.objects.all())
+
+        if update_mode:
+            updated = 0
+            for m in MEDICAMENTS:
+                try:
+                    med = Medicament.objects.get(nom=m['nom'])
+                    if not med.date_expiration and m.get('expiration'):
+                        med.date_expiration = date.fromisoformat(m['expiration'])
+                        med.save(update_fields=['date_expiration'])
+                        updated += 1
+                except Medicament.DoesNotExist:
+                    pass
+            self.stdout.write(self.style.SUCCESS(f'{updated} médicament(s) mis à jour avec date d\'expiration'))
+            return
+
         meds_created = 0
         for i, m in enumerate(MEDICAMENTS):
             if Medicament.objects.filter(nom=m['nom']).exists():
                 continue
             cat = cats_map.get(m['categorie'])
             etg = etgs[i % len(etgs)] if etgs else None
-            prix_achat = m.get('prix_achat', m.get('prix_achat', 0))
+            prix_achat = m.get('prix_achat', 0)
+            expiration = date.fromisoformat(m['expiration']) if m.get('expiration') else None
             Medicament.objects.create(
                 nom=m['nom'],
                 categorie=cat,
@@ -129,6 +155,7 @@ class Command(BaseCommand):
                 prix_vente=m['prix_vente'],
                 quantite_stock=m['stock'],
                 seuil_alerte=m['seuil'],
+                date_expiration=expiration,
                 code_barre='',
             )
             meds_created += 1
