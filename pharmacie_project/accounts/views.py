@@ -163,7 +163,7 @@ def reset_mot_de_passe_demande(request):
                 settings.DEFAULT_FROM_EMAIL,
                 [user.email],
                 html_message=html_message,
-                fail_silently=False,
+                fail_silently=True,
             )
 
             messages.success(request, f"Un code a été envoyé à {email}")
