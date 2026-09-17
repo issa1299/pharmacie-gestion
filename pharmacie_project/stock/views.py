@@ -5,6 +5,7 @@ from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import F
 from medicaments.models import Medicament
+from fournisseurs.models import Fournisseur
 from .models import MouvementStock
 from .forms import MouvementStockForm
 from accounts.permissions import pharmacien_required
@@ -42,7 +43,7 @@ def liste_stock(request):
 @pharmacien_required
 def liste_mouvements(request):
     mouvements = MouvementStock.objects.select_related(
-        'medicament', 'utilisateur'
+        'medicament', 'utilisateur', 'fournisseur'
     ).order_by('-date')
     type_filtre = request.GET.get('type', '')
     if type_filtre in ('entree', 'sortie', 'ajustement'):
@@ -64,10 +65,14 @@ def ajouter_mouvement(request):
                 qte = int(form.cleaned_data['quantite'])
             except (TypeError, ValueError):
                 messages.error(request, "Quantité invalide.")
-                return render(request, 'stock/mouvement_form.html', {'form': form})
+                return render(request, 'stock/mouvement_form.html', {
+                    'form': form, 'fournisseurs': Fournisseur.objects.all(),
+                })
             if qte <= 0:
                 messages.error(request, "La quantité doit être supérieure à zéro.")
-                return render(request, 'stock/mouvement_form.html', {'form': form})
+                return render(request, 'stock/mouvement_form.html', {
+                    'form': form, 'fournisseurs': Fournisseur.objects.all(),
+                })
             with transaction.atomic():
                 med = Medicament.objects.select_for_update().get(
                     pk=form.cleaned_data['medicament'].pk
@@ -78,7 +83,9 @@ def ajouter_mouvement(request):
                         request,
                         f"Stock insuffisant ! Stock disponible : {med.quantite_stock}"
                     )
-                    return render(request, 'stock/mouvement_form.html', {'form': form})
+                    return render(request, 'stock/mouvement_form.html', {
+                        'form': form, 'fournisseurs': Fournisseur.objects.all(),
+                    })
                 if type_mvt == 'entree':
                     Medicament.objects.filter(pk=med.pk).update(
                         quantite_stock=F('quantite_stock') + qte
@@ -99,4 +106,8 @@ def ajouter_mouvement(request):
             return redirect('stock:liste')
     else:
         form = MouvementStockForm()
-    return render(request, 'stock/mouvement_form.html', {'form': form})
+    fournisseurs = Fournisseur.objects.all()
+    return render(request, 'stock/mouvement_form.html', {
+        'form': form,
+        'fournisseurs': fournisseurs,
+    })

@@ -30,11 +30,24 @@
 
           <div class="mb-3">
             <label class="form-label fw-semibold">Type de mouvement *</label>
-            <select name="type_mouvement" class="form-select" required>
+            <select name="type_mouvement" class="form-select" required id="type-mouvement-select">
               <option value="">-- Choisir --</option>
               <option value="entree">⬆ Entrée (livraison)</option>
               <option value="sortie">⬇ Sortie (vente)</option>
               <option value="ajustement">⟳ Ajustement manuel</option>
+            </select>
+          </div>
+
+          <div class="mb-3" id="fournisseur-field" style="display:none;">
+            <label class="form-label fw-semibold">Fournisseur</label>
+            <select name="fournisseur" class="form-select">
+              <option value="">-- Aucun --</option>
+              {% for f in fournisseurs %}
+              <option value="{{ f.pk }}"
+                {% if form.fournisseur.value == f.pk|stringformat:"s" %}selected{% endif %}>
+                {{ f.nom }}
+              </option>
+              {% endfor %}
             </select>
           </div>
 
@@ -62,4 +75,13 @@
     </div>
   </div>
 </div>
+<script>
+  const typeSelect = document.getElementById('type-mouvement-select');
+  const fourField = document.getElementById('fournisseur-field');
+  function toggleFournisseur() {
+    fourField.style.display = typeSelect.value === 'entree' ? 'block' : 'none';
+  }
+  typeSelect.addEventListener('change', toggleFournisseur);
+  toggleFournisseur();
+</script>
 {% endblock %}

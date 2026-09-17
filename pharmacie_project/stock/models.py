@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 from medicaments.models import Medicament
+from fournisseurs.models import Fournisseur
+
 
 class MouvementStock(models.Model):
     TYPE_CHOICES = [
@@ -11,6 +13,11 @@ class MouvementStock(models.Model):
 
     medicament = models.ForeignKey(
         Medicament, on_delete=models.CASCADE, related_name='mouvements'
+    )
+    fournisseur = models.ForeignKey(
+        Fournisseur, on_delete=models.SET_NULL,
+        null=True, blank=True, related_name='livraisons',
+        verbose_name="Fournisseur (pour entrées)"
     )
     utilisateur = models.ForeignKey(
         User, on_delete=models.SET_NULL, null=True

@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+{% block title %}{{ fournisseur.nom }} — PharmaGest{% endblock %}
+{% block page_title %}Fiche fournisseur{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12 col-md-4">
+    <div class="card mb-4">
+      <div class="card-body text-center">
+        <i class="bi bi-truck text-primary" style="font-size:3rem;"></i>
+        <h4 class="mt-2">{{ fournisseur.nom }}</h4>
+        <span class="badge bg-secondary">{{ nb_livraisons }} livraison(s)</span>
+      </div>
+      <ul class="list-group list-group-flush">
+        {% if fournisseur.telephone %}
+        <li class="list-group-item"><i class="bi bi-telephone me-2"></i>{{ fournisseur.telephone }}</li>
+        {% endif %}
+        {% if fournisseur.email %}
+        <li class="list-group-item"><i class="bi bi-envelope me-2"></i>{{ fournisseur.email }}</li>
+        {% endif %}
+        {% if fournisseur.adresse %}
+        <li class="list-group-item"><i class="bi bi-geo-alt me-2"></i>{{ fournisseur.adresse }}</li>
+        {% endif %}
+        <li class="list-group-item"><i class="bi bi-clock me-2"></i>Inscrit le {{ fournisseur.created_at|date:"d/m/Y" }}</li>
+      </ul>
+      <div class="card-body">
+        <a href="{% url 'fournisseurs:modifier' pk=fournisseur.pk %}" class="btn btn-outline-primary btn-sm me-1">
+          <i class="bi bi-pencil me-1"></i>Modifier
+        </a>
+        <a href="{% url 'fournisseurs:liste' %}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-left me-1"></i>Retour
+        </a>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-bar-chart me-1"></i>Statistiques</div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span>Total livré</span>
+          <strong>{{ total_quantites }} unité(s)</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span>Nombre de livraisons</span>
+          <strong>{{ nb_livraisons }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-8">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-box-seam me-1"></i>Historique des livraisons</div>
+      <div class="card-body p-0">
+        {% if livraisons %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Médicament</th>
+                <th>Quantité</th>
+                <th>Motif</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for l in livraisons %}
+              <tr>
+                <td style="font-size:12px; color:#888;">{{ l.date|date:"d/m/Y H:i" }}</td>
+                <td><strong>{{ l.medicament.nom }}</strong></td>
+                <td><strong>{{ l.quantite }}</strong></td>
+                <td style="color:#888; font-size:13px;">{{ l.motif|default:"—" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% if livraisons.has_other_pages %}
+        <div class="d-flex justify-content-center py-3">
+          <nav>
+            <ul class="pagination pagination-sm mb-0">
+              {% if livraisons.has_previous %}
+              <li class="page-item"><a class="page-link" href="?page={{ livraisons.previous_page_number }}">&laquo;</a></li>
+              {% endif %}
+              {% for num in livraisons.paginator.page_range %}
+              <li class="page-item {% if livraisons.number == num %}active{% endif %}">
+                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+              </li>
+              {% endfor %}
+              {% if livraisons.has_next %}
+              <li class="page-item"><a class="page-link" href="?page={{ livraisons.next_page_number }}">&raquo;</a></li>
+              {% endif %}
+            </ul>
+          </nav>
+        </div>
+        {% endif %}
+        {% else %}
+        <p class="text-muted text-center py-4">Aucune livraison enregistrée.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

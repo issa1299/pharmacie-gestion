@@ -10,6 +10,28 @@ class Fournisseur(models.Model):
     def __str__(self):
         return self.nom
 
+    def nb_livraisons(self):
+        return self.livraisons.filter(type_mouvement='entree').count()
+
+    def total_quantites_livrees(self):
+        from django.db.models import Sum
+        result = self.livraisons.filter(
+            type_mouvement='entree'
+        ).aggregate(total=Sum('quantite'))
+        return result['total'] or 0
+
+    def medicaments_livres(self):
+        from django.db.models import Count
+        return (
+            self.livraisons.filter(type_mouvement='entree')
+            .values('medicament__nom')
+            .annotate(nb=Count('id'))
+            .order_by('-nb')
+        )
+
+    def derniere_livraison(self):
+        return self.livraisons.filter(type_mouvement='entree').order_by('-date').first()
+
     class Meta:
         verbose_name = "Fournisseur"
         ordering = ['nom']

@@ -1,7 +1,8 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Q
+from django.core.paginator import Paginator
+from django.db.models import Q, Sum, Count
 from .models import Fournisseur
 from .forms import FournisseurForm
 from accounts.permissions import pharmacien_required
@@ -10,7 +11,9 @@ from accounts.permissions import pharmacien_required
 @login_required
 @pharmacien_required
 def liste_fournisseurs(request):
-    fournisseurs = Fournisseur.objects.all()
+    fournisseurs = Fournisseur.objects.annotate(
+        nb_entrees=Count('livraisons', filter=Q(livraisons__type_mouvement='entree'))
+    )
     q = request.GET.get('q', '')
     if q:
         fournisseurs = fournisseurs.filter(
@@ -21,6 +24,30 @@ def liste_fournisseurs(request):
     return render(request, 'fournisseurs/liste.html', {
         'fournisseurs': fournisseurs,
         'q': q,
+    })
+
+
+@login_required
+@pharmacien_required
+def detail_fournisseur(request, pk):
+    fournisseur = get_object_or_404(Fournisseur, pk=pk)
+    livraisons = fournisseur.livraisons.filter(
+        type_mouvement='entree'
+    ).select_related('medicament', 'utilisateur').order_by('-date')
+
+    stats = livraisons.aggregate(
+        total_quantites=Sum('quantite'),
+        nb_livraisons=Count('id'),
+    )
+
+    paginator = Paginator(livraisons, 20)
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'fournisseurs/detail.html', {
+        'fournisseur': fournisseur,
+        'livraisons': page_obj,
+        'total_quantites': stats['total_quantites'] or 0,
+        'nb_livraisons': stats['nb_livraisons'] or 0,
     })
 
 

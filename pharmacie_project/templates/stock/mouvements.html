@@ -25,6 +25,7 @@
           <th>Médicament</th>
           <th>Type</th>
           <th>Quantité</th>
+          <th>Fournisseur</th>
           <th>Motif</th>
           <th>Utilisateur</th>
         </tr>
@@ -44,12 +45,13 @@
             {% endif %}
           </td>
           <td><strong>{{ m.quantite }}</strong></td>
+          <td style="font-size:13px;">{% if m.fournisseur %}{{ m.fournisseur.nom }}{% else %}—{% endif %}</td>
           <td style="color:#888; font-size:13px;">{{ m.motif|default:"—" }}</td>
           <td style="font-size:13px;">{{ m.utilisateur|default:"—" }}</td>
         </tr>
         {% empty %}
         <tr>
-          <td colspan="6" class="module-empty text-center py-5">
+          <td colspan="7" class="module-empty text-center py-5">
             <i class="bi bi-arrow-left-right fs-2 d-block mb-2"></i>
             Aucun mouvement enregistré.
           </td>
