@@ -1,10 +1,9 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.contrib.auth import update_session_auth_hash
+from django.contrib.auth import update_session_auth_hash, authenticate
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.views import View
 from .forms import ParametresForm
@@ -33,19 +32,26 @@ def parametres(request):
         form = ParametresForm(request.POST, request.FILES, instance=params)
 
         # Gestion du mot de passe séparément
+        current_pwd = request.POST.get('current_password', '')
         new_pwd = request.POST.get('new_password')
         conf_pwd = request.POST.get('confirm_password')
         pwd_ok = True
 
         if new_pwd:
-            if new_pwd == conf_pwd:
+            if not current_pwd:
+                messages.error(request, "Veuillez saisir votre mot de passe actuel.")
+                pwd_ok = False
+            elif not request.user.check_password(current_pwd):
+                messages.error(request, "Le mot de passe actuel est incorrect.")
+                pwd_ok = False
+            elif new_pwd != conf_pwd:
+                messages.error(request, "Les mots de passe ne correspondent pas.")
+                pwd_ok = False
+            else:
                 request.user.set_password(new_pwd)
                 request.user.save()
                 update_session_auth_hash(request, request.user)
                 messages.success(request, "Mot de passe mis à jour.")
-            else:
-                messages.error(request, "Les mots de passe ne correspondent pas.")
-                pwd_ok = False
 
         if form.is_valid() and pwd_ok:
             # Force l'enregistrement du nouveau logo (si fourni) AVANT suppression
@@ -68,7 +74,6 @@ def parametres(request):
     return render(request, 'parametres/index.html', {'params': params, 'form': form})
 
 
-@method_decorator(csrf_exempt, name='dispatch')
 class LanguageAPIView(View):
     """API REST pour gérer la langue
     

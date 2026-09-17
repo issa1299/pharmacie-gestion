@@ -98,7 +98,7 @@ def nouvelle_vente(request):
                 messages.error(request, "Les quantités doivent être supérieures à zéro !")
                 return render(request, 'ventes/nouvelle.html', contexte)
             try:
-                med = Medicament.objects.get(pk=med_id)
+                med = Medicament.objects.select_for_update().get(pk=med_id)
             except Medicament.DoesNotExist:
                 messages.error(request, "Un médicament sélectionné n'existe plus !")
                 return render(request, 'ventes/nouvelle.html', contexte)
@@ -305,8 +305,8 @@ def webhook_paiement(request):
         return JsonResponse({'status': 'ok'})
     except json.JSONDecodeError:
         return JsonResponse({'status': 'error', 'message': 'JSON invalide'}, status=400)
-    except Exception as e:
-        return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+    except Exception:
+        return JsonResponse({'status': 'error', 'message': 'Erreur interne'}, status=400)
 
 
 # ── FACTURE PDF ───────────────────────────────────────────────────────────────

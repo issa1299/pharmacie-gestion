@@ -263,12 +263,14 @@ def reset_mot_de_passe(request):
     """Réinitialisation DIRECTE (sans code par email).
 
     Formulaire: email + new_password + confirm_password.
+    Réservé aux superutilisateurs en mode DEBUG uniquement.
     """
-    # SECURITE : le reset direct (sans email/code) n'est autorisé qu'en dev
-    # (DEBUG=True). En production il redirige vers le flux par email + code,
-    # sinon n'importe qui pourrait changer le mot de passe de n'importe quel compte.
     if not settings.DEBUG:
         return redirect('account_reset_password_request')
+
+    if not request.user.is_authenticated or not request.user.is_superuser:
+        messages.error(request, "Accès réservé aux administrateurs.")
+        return redirect('dashboard')
 
     if request.method == 'POST':
         # Le template utilise "identifiant" (email ou username).

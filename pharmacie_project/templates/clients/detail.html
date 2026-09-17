@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}{{ client.nom }} {{ client.prenom }} — PharmaGest{% endblock %}
+{% block page_title %}Fiche client{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12 col-md-4">
+    <div class="card mb-4">
+      <div class="card-body text-center">
+        <i class="bi bi-person-circle text-primary" style="font-size:3rem;"></i>
+        <h4 class="mt-2">{{ client.nom }} {{ client.prenom }}</h4>
+        <span class="badge bg-secondary">{{ nb_ventes }} achat(s)</span>
+      </div>
+      <ul class="list-group list-group-flush">
+        {% if client.telephone %}
+        <li class="list-group-item"><i class="bi bi-telephone me-2"></i>{{ client.telephone }}</li>
+        {% endif %}
+        {% if client.email %}
+        <li class="list-group-item"><i class="bi bi-envelope me-2"></i>{{ client.email }}</li>
+        {% endif %}
+        {% if client.adresse %}
+        <li class="list-group-item"><i class="bi bi-geo-alt me-2"></i>{{ client.adresse }}</li>
+        {% endif %}
+        {% if client.date_naissance %}
+        <li class="list-group-item"><i class="bi bi-calendar me-2"></i>{{ client.date_naissance|date:"d/m/Y" }}</li>
+        {% endif %}
+        <li class="list-group-item"><i class="bi bi-clock me-2"></i>Inscrit le {{ client.created_at|date:"d/m/Y" }}</li>
+      </ul>
+      <div class="card-body">
+        <a href="{% url 'clients:modifier' pk=client.pk %}" class="btn btn-outline-primary btn-sm me-1">
+          <i class="bi bi-pencil me-1"></i>Modifier
+        </a>
+        <a href="{% url 'clients:liste' %}" class="btn btn-outline-secondary btn-sm">
+          <i class="bi bi-arrow-left me-1"></i>Retour
+        </a>
+      </div>
+    </div>
+
+    <div class="card mb-4">
+      <div class="card-header"><i class="bi bi-bar-chart me-1"></i>Statistiques</div>
+      <div class="card-body">
+        <div class="d-flex justify-content-between mb-2">
+          <span>Total achats validés</span>
+          <strong>{{ total_achats|floatformat:0 }} FCFA</strong>
+        </div>
+        <div class="d-flex justify-content-between mb-2">
+          <span>Nombre de ventes validées</span>
+          <strong>{{ nb_achats_valides }}</strong>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-12 col-md-8">
+    <div class="card">
+      <div class="card-header"><i class="bi bi-receipt me-1"></i>Dernières transactions</div>
+      <div class="card-body p-0">
+        {% if ventes %}
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead>
+              <tr>
+                <th>Facture</th>
+                <th>Date</th>
+                <th>Total</th>
+                <th>Statut</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for v in ventes %}
+              <tr>
+                <td><a href="{% url 'ventes:detail' pk=v.pk %}">{{ v.numero_facture }}</a></td>
+                <td>{{ v.date_vente|date:"d/m/Y H:i" }}</td>
+                <td>{{ v.total|floatformat:0 }} FCFA</td>
+                <td>
+                  {% if v.statut == 'validee' %}
+                    <span class="badge bg-success">Validée</span>
+                  {% elif v.statut == 'annulee' %}
+                    <span class="badge bg-danger">Annulée</span>
+                  {% else %}
+                    <span class="badge bg-warning">{{ v.statut }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <p class="text-muted text-center py-4">Aucune transaction enregistrée.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -8,7 +8,7 @@ class SessionDurationMiddleware:
 
     def __call__(self, request):
         if request.user.is_authenticated:
-            params, _ = Parametres.objects.get_or_create(pk=1)
+            params = Parametres.get_cached()
             request.session.set_expiry(params.session_duree * 60)
 
         return self.get_response(request)
@@ -19,7 +19,7 @@ class LanguageMiddleware:
         self.get_response = get_response
 
     def __call__(self, request):
-        params, _ = Parametres.objects.get_or_create(pk=1)
+        params = Parametres.get_cached()
         langue = params.langue if params.langue in ['fr', 'en', 'ar'] else 'fr'
         
         translation.activate(langue)

@@ -17,9 +17,7 @@ INSTALLATION PHARMAGEST
    python manage.py runserver
 9. Ouvrir : http://127.0.0.1:8000
 
-COMPTE DEMO : admin / admin123
-
-> ⚠️ Aucun mot de passe par défaut en production. Créez toujours votre super-utilisateur :
+> Créez votre super-utilisateur :
 > ```bash
 > python manage.py createsuperuser
 > ```

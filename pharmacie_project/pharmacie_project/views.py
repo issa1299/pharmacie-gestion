@@ -13,6 +13,7 @@ from django.utils import timezone
 from decimal import Decimal
 from medicaments.models import Medicament
 from ventes.models import Vente, LigneVente
+from accounts.permissions import pharmacien_required
 
 
 @login_required
@@ -146,6 +147,7 @@ def recherche_globale(request):
 
 
 @login_required
+@pharmacien_required
 def relancer_paiement(request, pk):
     """Relance une vente bloquée en 'en_attente' : régénère le lien de
     paiement (nouveau secret + référence) ou l'annule si le stock a fondu."""

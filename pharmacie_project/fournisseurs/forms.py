@@ -1,20 +1,9 @@
 from django import forms
 from .models import Fournisseur
-
-_STYLE_TEXT = {'class': 'form-control'}
-
-
-class _StyledModelForm(forms.ModelForm):
-    """Ajoute automatiquement form-control à chaque champ."""
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        for field in self.fields.values():
-            for k, v in _STYLE_TEXT.items():
-                field.widget.attrs.setdefault(k, v)
+from common.forms import StyledModelForm
 
 
-class FournisseurForm(_StyledModelForm):
+class FournisseurForm(StyledModelForm):
     class Meta:
         model = Fournisseur
         fields = ['nom', 'telephone', 'email', 'adresse']

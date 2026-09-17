@@ -1,4 +1,9 @@
 from django.db import models
+from django.core.cache import cache
+
+PARAMS_CACHE_KEY = 'pharmacie_params'
+PARAMS_CACHE_TTL = 300  # 5 minutes
+
 
 class Parametres(models.Model):
     # Informations pharmacie
@@ -22,5 +27,17 @@ class Parametres(models.Model):
     def __str__(self):
         return self.nom_pharmacie
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        cache.delete(PARAMS_CACHE_KEY)
+
     class Meta:
         verbose_name = "Paramètres"
+
+    @classmethod
+    def get_cached(cls):
+        params = cache.get(PARAMS_CACHE_KEY)
+        if params is None:
+            params, _ = cls.objects.get_or_create(pk=1)
+            cache.set(PARAMS_CACHE_KEY, params, PARAMS_CACHE_TTL)
+        return params

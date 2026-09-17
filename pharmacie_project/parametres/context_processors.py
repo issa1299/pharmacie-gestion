@@ -82,25 +82,31 @@ TRANSLATIONS = {
 
 
 def site_params(request):
-    params, _ = Parametres.objects.get_or_create(pk=1)
+    params = Parametres.get_cached()
     langue = params.langue if params.langue in TRANSLATIONS else 'fr'
     translations = TRANSLATIONS.get(langue, TRANSLATIONS['fr'])
     aujourd_hui = timezone.now().date()
-    medicaments_stock_faible = Medicament.objects.filter(
+
+    alertes_stock_count = Medicament.objects.filter(
         quantite_stock__lte=F('seuil_alerte')
-    ).order_by('quantite_stock', 'nom')
-    medicaments_expires = Medicament.objects.filter(
+    ).count()
+    alertes_expiration_count = Medicament.objects.filter(
         date_expiration__isnull=False,
         date_expiration__lte=aujourd_hui
-    ).order_by('date_expiration', 'nom')
-    
+    ).count()
+
     return {
         "site_params": params,
-        "t": translations,  # t pour traduction
+        "t": translations,
         "langue": langue,
-        "alertes_stock_count": medicaments_stock_faible.count(),
-        "alertes_expiration_count": medicaments_expires.count(),
-        "alertes_total": medicaments_stock_faible.count() + medicaments_expires.count(),
-        "alertes_stock_preview": medicaments_stock_faible[:3],
-        "alertes_expiration_preview": medicaments_expires[:3],
+        "alertes_stock_count": alertes_stock_count,
+        "alertes_expiration_count": alertes_expiration_count,
+        "alertes_total": alertes_stock_count + alertes_expiration_count,
+        "alertes_stock_preview": Medicament.objects.filter(
+            quantite_stock__lte=F('seuil_alerte')
+        ).order_by('quantite_stock', 'nom')[:3],
+        "alertes_expiration_preview": Medicament.objects.filter(
+            date_expiration__isnull=False,
+            date_expiration__lte=aujourd_hui
+        ).order_by('date_expiration', 'nom')[:3],
     }
