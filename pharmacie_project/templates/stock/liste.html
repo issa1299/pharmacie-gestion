@@ -15,6 +15,17 @@
 </div>
 {% endif %}
 
+<!-- Alerte expirations -->
+{% if alertes_expiration %}
+<div class="module-alert" style="background:#FFF3E0; border-left:4px solid #E65100;">
+  <span style="font-size:20px;">⏰</span>
+  <div style="font-size:13px; color:#E65100;">
+    <strong>{{ alertes_expiration.count }} médicament(s) expiré(s) !</strong>
+    Retirez-les du stock immédiatement.
+  </div>
+</div>
+{% endif %}
+
 <!-- Bouton ajouter mouvement -->
 <div class="module-toolbar d-flex justify-content-end mb-3">
   <a href="{% url 'stock:ajouter_mouvement' %}" class="btn btn-primary">

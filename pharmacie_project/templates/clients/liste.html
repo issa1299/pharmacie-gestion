@@ -33,7 +33,7 @@
           <th>Nom complet</th>
           <th>Téléphone</th>
           <th>Email</th>
-          <th>Date inscription</th>
+          <th>Achats</th>
           <th>Actions</th>
         </tr>
       </thead>
@@ -41,16 +41,29 @@
         {% for client in clients %}
         <tr>
           <td>
-            <div style="font-weight:500;">{{ client.nom }} {{ client.prenom }}</div>
+            <a href="{% url 'clients:detail' client.pk %}" class="text-decoration-none">
+              <div style="font-weight:500;">{{ client.nom }} {{ client.prenom }}</div>
+            </a>
             {% if client.adresse %}
             <div style="font-size:11px; color:#aaa;">{{ client.adresse }}</div>
             {% endif %}
           </td>
           <td>{{ client.telephone|default:"—" }}</td>
           <td style="font-size:13px; color:#888;">{{ client.email|default:"—" }}</td>
-          <td style="font-size:12px; color:#aaa;">{{ client.created_at|date:site_params.format_date }}</td>
+          <td>
+            {% if client.nb_ventes > 0 %}
+            <span class="badge bg-success">{{ client.nb_ventes }}</span>
+            {% else %}
+            <span class="text-muted">0</span>
+            {% endif %}
+          </td>
           <td>
             <div class="d-flex gap-1">
+              <a href="{% url 'clients:detail' client.pk %}"
+                 class="btn-icon" title="Voir détail"
+                 style="width:30px;height:30px;font-size:14px;color:#0F6E56;">
+                <i class="bi bi-eye"></i>
+              </a>
               <a href="{% url 'clients:modifier' client.pk %}"
                  class="btn-icon" title="Modifier"
                  style="width:30px;height:30px;font-size:14px;">

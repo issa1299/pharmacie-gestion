@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import F
+from django.utils import timezone
 from medicaments.models import Medicament
 from fournisseurs.models import Fournisseur
 from .models import MouvementStock
@@ -27,6 +28,10 @@ def liste_stock(request):
     nb_alertes = Medicament.objects.filter(
         quantite_stock__lte=F('seuil_alerte')
     ).count()
+    alertes_expiration = Medicament.objects.filter(
+        date_expiration__isnull=False,
+        date_expiration__lte=timezone.now().date(),
+    )
     paginator = Paginator(medicaments, 20)
     page_obj = paginator.get_page(request.GET.get('page'))
     return render(request, 'stock/liste.html', {
@@ -34,6 +39,7 @@ def liste_stock(request):
         'stock_faible': Medicament.objects.filter(
             quantite_stock__lte=F('seuil_alerte')
         ),
+        'alertes_expiration': alertes_expiration,
         'nb_alertes': nb_alertes,
         'alerte_only': alerte_only,
         'q': q,

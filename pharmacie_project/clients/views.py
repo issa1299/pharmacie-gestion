@@ -34,10 +34,11 @@ def detail_client(request, pk):
         total_achats=Sum('total'),
         nb_achats=Count('id'),
     )
-    dernieres = ventes[:10]
+    paginator = Paginator(ventes, 10)
+    page_obj = paginator.get_page(request.GET.get('page'))
     return render(request, 'clients/detail.html', {
         'client': client,
-        'ventes': dernieres,
+        'ventes': page_obj,
         'nb_ventes': ventes.count(),
         'total_achats': stats['total_achats'] or 0,
         'nb_achats_valides': stats['nb_achats'] or 0,
