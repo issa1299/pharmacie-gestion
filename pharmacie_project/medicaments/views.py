@@ -205,3 +205,133 @@ def supprimer_etagere(request, pk):
         messages.success(request, "Étagère supprimée.")
         return redirect('medicaments:etageres')
     return render(request, 'medicaments/etagere_supprimer.html', {'etagere': etagere})
+
+
+# ── Import / Export CSV ──────────────────────────────────────────────────────
+
+@login_required
+@pharmacien_required
+def telecharger_modele_csv(request):
+    """Télécharger un fichier CSV template pré-rempli avec des exemples."""
+    import csv
+    from django.http import HttpResponse
+    resp = HttpResponse(content_type='text/csv; charset=utf-8-sig')
+    resp['Content-Disposition'] = 'attachment; filename="modele_medicaments.csv"'
+    resp.write('\ufeff')
+    writer = csv.writer(resp, delimiter=';', quoting=csv.QUOTE_MINIMAL)
+    writer.writerow([
+        'Nom', 'Categorie', 'Code-barres', 'Description',
+        'Prix achat', 'Prix vente', 'Stock', 'Seuil alerte',
+        'Date expiration (JJ/MM/AAAA)', 'Etagere (code)',
+    ])
+    examples = [
+        ['Doliprane 1000mg', 'Antalgiques', '3400930000001', 'Paracetamol 1g - boite de 8', '150', '350', '50', '10', '31/12/2027', ''],
+        ['Amoxicilline 1g', 'Antibiotiques', '3400930000002', 'Antibiotique large spectre', '800', '1500', '30', '5', '15/06/2027', 'A1'],
+        ['Spasfon 80mg', 'Antispasmodiques', '3400930000003', 'Phloroglucinol - tubes de 20', '400', '900', '25', '8', '01/03/2028', 'A2'],
+    ]
+    for row in examples:
+        writer.writerow(row)
+    return resp
+
+
+@login_required
+@pharmacien_required
+def importer_medicaments_csv(request):
+    """Importer des medicaments depuis un fichier CSV."""
+    import csv
+    import io
+    from datetime import datetime
+    from django.utils import timezone
+
+    if request.method != 'POST':
+        return render(request, 'medicaments/importer.html')
+
+    fichier = request.FILES.get('fichier')
+    if not fichier:
+        messages.error(request, "Veuillez selectionner un fichier CSV.")
+        return render(request, 'medicaments/importer.html')
+
+    if not fichier.name.endswith('.csv'):
+        messages.error(request, "Le fichier doit etre au format CSV.")
+        return render(request, 'medicaments/importer.html')
+
+    try:
+        content = fichier.read().decode('utf-8-sig')
+        reader = csv.DictReader(io.StringIO(content), delimiter=';')
+    except Exception:
+        messages.error(request, "Impossible de lire le fichier. Verifiez l'encodage (UTF-8).")
+        return render(request, 'medicaments/importer.html')
+
+    crees = 0
+    modifies = 0
+    erreurs = []
+
+    for i, row in enumerate(reader, start=2):
+        try:
+            nom = row.get('Nom', '').strip()
+            if not nom:
+                erreurs.append(f"Ligne {i} : nom vide, ignoree.")
+                continue
+
+            categorie = None
+            cat_nom = row.get('Categorie', '').strip()
+            if cat_nom:
+                categorie, _ = Categorie.objects.get_or_create(nom=cat_nom)
+
+            etagere = None
+            et_code = row.get('Etagere (code)', '').strip()
+            if et_code:
+                etagere = Etagere.objects.filter(code=et_code).first()
+
+            prix_achat = float(row.get('Prix achat', '0') or '0')
+            prix_vente = float(row.get('Prix vente', '0') or '0')
+            stock = int(row.get('Stock', '0') or '0')
+            seuil = int(row.get('Seuil alerte', '10') or '10')
+
+            date_exp = None
+            date_str = row.get('Date expiration (JJ/MM/AAAA)', '').strip()
+            if date_str:
+                try:
+                    date_exp = datetime.strptime(date_str, '%d/%m/%Y').date()
+                except ValueError:
+                    try:
+                        date_exp = datetime.strptime(date_str, '%Y-%m-%d').date()
+                    except ValueError:
+                        erreurs.append(f"Ligne {i} : date d'expiration invalide '{date_str}'.")
+
+            code_barre = row.get('Code-barres', '').strip()
+            description = row.get('Description', '').strip()
+
+            # Creer ou mettre a jour (selon nom)
+            med, created = Medicament.objects.update_or_create(
+                nom=nom,
+                defaults={
+                    'categorie': categorie,
+                    'etagere': etagere,
+                    'code_barre': code_barre,
+                    'description': description,
+                    'prix_achat': prix_achat,
+                    'prix_vente': prix_vente,
+                    'quantite_stock': stock,
+                    'seuil_alerte': seuil,
+                    'date_expiration': date_exp,
+                }
+            )
+            if created:
+                crees += 1
+            else:
+                modifies += 1
+
+        except Exception as e:
+            erreurs.append(f"Ligne {i} : erreur — {str(e)}")
+
+    msg = f"Import termine : {crees} cree(s), {modifies} modifie(s)."
+    if erreurs:
+        msg += f" {len(erreurs)} erreur(s)."
+    messages.success(request, msg)
+
+    if erreurs:
+        for err in erreurs[:10]:
+            messages.warning(request, err)
+
+    return redirect('medicaments:liste')

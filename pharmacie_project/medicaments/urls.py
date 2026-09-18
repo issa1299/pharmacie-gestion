@@ -16,4 +16,6 @@ urlpatterns = [
     path('etageres/ajouter/', views.ajouter_etagere, name='ajouter_etagere'),
     path('etageres/<int:pk>/modifier/', views.modifier_etagere, name='modifier_etagere'),
     path('etageres/<int:pk>/supprimer/', views.supprimer_etagere, name='supprimer_etagere'),
+    path('importer/', views.importer_medicaments_csv, name='importer'),
+    path('modele-csv/', views.telecharger_modele_csv, name='modele_csv'),
 ]
