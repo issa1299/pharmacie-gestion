@@ -2,6 +2,34 @@
 {% block title %}Ventes — PharmaGest{% endblock %}
 {% block page_title %}Historique des ventes{% endblock %}
 
+{% block extra_css %}
+<style>
+  .facture-modal {
+    display: none; position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,.45); align-items: center; justify-content: center;
+  }
+  .facture-modal.open { display: flex; }
+  .facture-sheet {
+    background: #fff; width: 95%; max-width: 420px; max-height: 85vh;
+    border-radius: 14px; overflow-y: auto;
+    animation: factureSlideUp .25s ease;
+  }
+  @keyframes factureSlideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .facture-head {
+    background: var(--primary); color: #fff; padding: 14px 18px;
+    border-radius: 14px 14px 0 0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .facture-head h5 { margin: 0; font-size: 15px; font-weight: 700; }
+  .facture-body { padding: 18px; font-family: 'Courier New', monospace; font-size: 13px; }
+  .facture-sep { border: none; border-top: 1px dashed #ccc; margin: 10px 0; }
+  .facture-row { display: flex; justify-content: space-between; margin: 4px 0; }
+  .facture-row-indent { display: flex; justify-content: space-between; padding-left: 10px; color: #555; }
+  .facture-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 15px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #aaa; }
+  .facture-footer { text-align: center; color: #888; font-size: 11px; margin-top: 12px; }
+</style>
+{% endblock %}
+
 {% block content %}
 
 <div class="module-toolbar d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -59,11 +87,10 @@
             {{ vente.date_vente|date:site_params.format_date }} {{ vente.date_vente|date:"H:i" }}
           </td>
           <td>
-            <a href="{% url 'ventes:detail' vente.pk %}"
-               class="btn-icon" title="Voir détail"
-               style="width:30px;height:30px;font-size:14px;">
+            <button type="button" class="btn-icon facture-btn" data-pk="{{ vente.pk }}"
+                    title="Voir détail" style="width:30px;height:30px;font-size:14px;">
               <i class="bi bi-eye"></i>
-            </a>
+            </button>
           </td>
         </tr>
         {% empty %}
@@ -99,9 +126,9 @@
         <div><span class="mc-label">Total</span><div class="mc-val" style="font-weight:700;">{{ vente.total }} {{ site_params.devise }}</div></div>
       </div>
       <div class="mc-actions">
-        <a href="{% url 'ventes:detail' vente.pk %}" class="btn btn-sm btn-outline-primary">
-          <i class="bi bi-eye me-1"></i>Detail
-        </a>
+        <button type="button" class="btn btn-sm btn-outline-primary facture-btn" data-pk="{{ vente.pk }}">
+          <i class="bi bi-eye me-1"></i>Voir
+        </button>
       </div>
     </div>
     {% empty %}
@@ -112,4 +139,104 @@
   </div>
 </div>
 
+<!-- MODAL FACTURE -->
+<div class="facture-modal" id="facture-modal">
+  <div class="facture-sheet">
+    <div class="facture-head">
+      <h5><i class="bi bi-receipt-cutoff me-2"></i><span id="fm-numero"></span></h5>
+      <button type="button" class="btn-icon" id="facture-close" style="background:rgba(255,255,255,.2);color:#fff;width:30px;height:30px;">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="facture-body">
+      <div style="text-align:center;font-weight:bold;font-size:16px;margin-bottom:4px;" id="fm-pharmacie"></div>
+      <div style="text-align:center;font-size:10px;color:#888;margin-bottom:8px;" id="fm-adresse"></div>
+      <hr class="facture-sep">
+      <div class="facture-row"><span>Facture :</span><span id="fm-num2"></span></div>
+      <div class="facture-row"><span>Date :</span><span id="fm-date"></span></div>
+      <div class="facture-row"><span>Client :</span><span id="fm-client"></span></div>
+      <div class="facture-row"><span>Caissier :</span><span id="fm-caissier"></span></div>
+      <hr class="facture-sep">
+      <div id="fm-lignes"></div>
+      <hr class="facture-sep">
+      <div class="facture-row"><span>Sous-total</span><span id="fm-total"></span></div>
+      <div class="facture-row" id="fm-remise-row" style="display:none;"><span>Remise</span><span id="fm-remise" style="color:#e24b4a;"></span></div>
+      <div class="facture-total"><span>NET A PAYER</span><span id="fm-net"></span></div>
+      <div class="facture-row" style="margin-top:8px;font-size:11px;color:#555;">
+        <span>Paiement : <span id="fm-paiement"></span></span>
+        <span style="text-transform:uppercase;"><span id="fm-statut-paiement"></span></span>
+      </div>
+      <hr class="facture-sep">
+      <div style="text-align:center;font-weight:bold;">
+        <span id="fm-statut"></span>
+      </div>
+      <hr class="facture-sep">
+      <div class="facture-footer">
+        Merci de votre confiance !<br>Conservez ce ticket.<br>
+        --------------------------------<br>
+        <span id="fm-pharmacie-footer"></span>
+      </div>
+    </div>
+    <div class="px-3 pb-3 d-flex gap-2 no-print">
+      <a href="#" id="fm-pdf" target="_blank" class="btn btn-outline-primary btn-sm flex-fill">
+        <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+      </a>
+      <button type="button" onclick="window.print()" class="btn btn-primary btn-sm flex-fill">
+        <i class="bi bi-printer me-1"></i>Imprimer
+      </button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const modal = document.getElementById('facture-modal');
+  const devise = '{{ site_params.devise|default:"FCFA" }}';
+  const fmt = n => new Intl.NumberFormat('fr-FR').format(Math.round(n)) + ' ' + devise;
+
+  function ouvrirFacture(pk) {
+    fetch('/ventes/' + pk + '/json/')
+      .then(r => r.json())
+      .then(d => {
+        document.getElementById('fm-numero').textContent = d.numero_facture;
+        document.getElementById('fm-num2').textContent = d.numero_facture;
+        document.getElementById('fm-pharmacie').textContent = d.nom_pharmacie;
+        document.getElementById('fm-pharmacie-footer').textContent = d.nom_pharmacie;
+        document.getElementById('fm-adresse').textContent = d.adresse || '';
+        document.getElementById('fm-date').textContent = d.date;
+        document.getElementById('fm-client').textContent = d.client;
+        document.getElementById('fm-caissier').textContent = d.caissier;
+        document.getElementById('fm-paiement').textContent = d.mode_paiement;
+        document.getElementById('fm-statut').textContent = d.statut === 'validee' ? '*** VENTE VALIDEE ***' : '*** VENTE ANNULEE ***';
+        document.getElementById('fm-statut').style.color = d.statut === 'validee' ? '#2DAA72' : '#C0392B';
+        const sp = document.getElementById('fm-statut-paiement');
+        sp.textContent = d.statut_paiement;
+        sp.style.color = d.statut_paiement === 'Paye' ? '#2DAA72' : d.statut_paiement === 'En attente' ? '#FF6A00' : '#e24b4a';
+        sp.style.fontWeight = 'bold';
+        document.getElementById('fm-total').textContent = fmt(d.total);
+        document.getElementById('fm-net').textContent = fmt(d.net_a_payer);
+        document.getElementById('fm-pdf').href = '/ventes/' + pk + '/facture/pdf/';
+        const remiseRow = document.getElementById('fm-remise-row');
+        if (d.remise > 0) { remiseRow.style.display = 'flex'; document.getElementById('fm-remise').textContent = '-' + fmt(d.remise); }
+        else { remiseRow.style.display = 'none'; }
+        const lignesEl = document.getElementById('fm-lignes');
+        lignesEl.innerHTML = '';
+        d.lignes.forEach(l => {
+          lignesEl.innerHTML +=
+            '<div class="facture-row" style="font-weight:500;"><span>' + l.nom + '</span></div>' +
+            '<div class="facture-row-indent"><span>x' + l.quantite + ' @ ' + fmt(l.prix_unitaire) + '</span><span>' + fmt(l.sous_total) + '</span></div>';
+        });
+        modal.classList.add('open');
+      });
+  }
+
+  document.querySelectorAll('.facture-btn').forEach(btn => {
+    btn.addEventListener('click', () => ouvrirFacture(btn.dataset.pk));
+  });
+
+  document.getElementById('facture-close').addEventListener('click', () => modal.classList.remove('open'));
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+</script>
 {% endblock %}

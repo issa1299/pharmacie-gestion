@@ -189,6 +189,7 @@ def detail_vente_json(request, pk):
         'remise': float(vente.remise),
         'net_a_payer': float(vente.net_a_payer),
         'nom_pharmacie': params.nom_pharmacie or 'PharmaGest',
+        'adresse': params.adresse or '',
         'devise': params.devise or 'FCFA',
         'lignes': [{
             'nom': l.medicament.nom,
