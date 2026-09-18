@@ -118,6 +118,43 @@ def ajouter_categorie(request):
     return redirect('medicaments:categories')
 
 
+@login_required
+@pharmacien_required
+def modifier_categorie(request, pk):
+    categorie = get_object_or_404(Categorie, pk=pk)
+    if request.method == 'POST':
+        nom = request.POST.get('nom')
+        description = request.POST.get('description', '')
+        if nom:
+            categorie.nom = nom
+            categorie.description = description
+            categorie.save()
+            messages.success(request, "Catégorie modifiée avec succès !")
+        return redirect('medicaments:categories')
+    return render(request, 'medicaments/categorie_form.html', {
+        'categorie': categorie,
+    })
+
+
+@login_required
+@pharmacien_required
+def supprimer_categorie(request, pk):
+    categorie = get_object_or_404(Categorie, pk=pk)
+    if request.method == 'POST':
+        if categorie.medicaments.exists():
+            messages.error(
+                request,
+                f"Impossible de supprimer '{categorie.nom}' : elle contient encore des médicaments."
+            )
+            return redirect('medicaments:categories')
+        categorie.delete()
+        messages.success(request, "Catégorie supprimée.")
+        return redirect('medicaments:categories')
+    return render(request, 'medicaments/categorie_supprimer.html', {
+        'categorie': categorie,
+    })
+
+
 # ── Étagères ──────────────────────────────────────────────────────────────────
 
 @login_required

@@ -45,7 +45,8 @@
             <tr>
               <th>Nom</th>
               <th>Description</th>
-              <th>Nb médicaments</th>
+              <th>Médicaments</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -54,14 +55,30 @@
               <td><strong>{{ cat.nom }}</strong></td>
               <td style="color:#888; font-size:13px;">{{ cat.description|default:"—" }}</td>
               <td>
-                <span class="badge badge-stock-ok module-badge">
-                  {{ cat.medicaments.count }}
-                </span>
+                <a href="{% url 'medicaments:liste' %}?categorie={{ cat.pk }}" class="text-decoration-none">
+                  <span class="badge badge-stock-ok module-badge">
+                    {{ cat.medicaments.count }}
+                  </span>
+                </a>
+              </td>
+              <td>
+                <div class="d-flex gap-1">
+                  <a href="{% url 'medicaments:modifier_categorie' cat.pk %}"
+                     class="btn-icon" title="Modifier"
+                     style="width:30px;height:30px;font-size:14px;">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                  <a href="{% url 'medicaments:supprimer_categorie' cat.pk %}"
+                     class="btn-icon" title="Supprimer"
+                     style="width:30px;height:30px;font-size:14px;color:#E24B4A;">
+                    <i class="bi bi-trash"></i>
+                  </a>
+                </div>
               </td>
             </tr>
             {% empty %}
             <tr>
-              <td colspan="3" class="module-empty text-center py-5">
+              <td colspan="4" class="module-empty text-center py-5">
                 <i class="bi bi-tag fs-2 d-block mb-2"></i>
                 Aucune catégorie. Ajoutez-en une !
               </td>
