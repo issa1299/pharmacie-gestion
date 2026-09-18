@@ -661,9 +661,31 @@
       () => {}
     ).then(() => { scannerRunning = true; })
      .catch(err => {
-       region.style.display = 'none';
-       $('btn-scan-barcode').innerHTML = '<i class="bi bi-camera me-1"></i>Scanner code-barres';
-       showToast('Camera non disponible : ' + err, 'error');
+       // Fallback : essayer avec toutes les cameras
+       html5QrCode.start(
+         { facingMode: 'user' },
+         { fps: 10, qrbox: { width: 280, height: 120 }, aspectRatio: 2.0 },
+         (decodedText) => {
+           const p = PRODUITS.find(x => x.code_barre && x.code_barre === decodedText);
+           if (p && p.stock > 0) {
+             ajouter(p);
+             showToast(p.nom + ' ajouté au panier', 'success');
+             scan.value = ''; terme = ''; rendreGrille(); arreterScanner();
+           } else if (p && p.stock <= 0) {
+             showToast('Rupture de stock : ' + p.nom, 'warning');
+             scan.value = decodedText;
+           } else {
+             showToast('Code-barres ' + decodedText + ' — produit non enregistré', 'error');
+             scan.value = decodedText;
+           }
+         },
+         () => {}
+       ).then(() => { scannerRunning = true; })
+        .catch(() => {
+          region.style.display = 'none';
+          $('btn-scan-barcode').innerHTML = '<i class="bi bi-camera me-1"></i>Scanner code-barres';
+          showToast('Camera non disponible. Activer HTTPS ou autoriser la camera.', 'error');
+        });
      });
   });
 
