@@ -87,6 +87,30 @@
           </tbody>
         </table>
       </div>
+
+      <!-- VERSION MOBILE : CARTES -->
+      <div class="mobile-cards p-3">
+        {% for cat in categories %}
+        <div class="mc-card">
+          <div class="mc-top">
+            <div class="mc-title">{{ cat.nom }}</div>
+            <a href="{% url 'medicaments:liste' %}?categorie={{ cat.pk }}" class="mc-badge badge-stock-ok text-decoration-none">{{ cat.medicaments.count }} med(s)</a>
+          </div>
+          {% if cat.description %}
+          <div style="font-size:13px;color:#888;">{{ cat.description }}</div>
+          {% endif %}
+          <div class="mc-actions">
+            <a href="{% url 'medicaments:modifier_categorie' cat.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Modifier</a>
+            <a href="{% url 'medicaments:supprimer_categorie' cat.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-1"></i>Supprimer</a>
+          </div>
+        </div>
+        {% empty %}
+        <div class="text-center py-4" style="color:#aaa;">
+          <i class="bi bi-tag fs-2 d-block mb-2"></i>Aucune categorie
+        </div>
+        {% endfor %}
+      </div>
+
     </div>
   </div>
 
