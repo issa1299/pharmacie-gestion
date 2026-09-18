@@ -33,8 +33,8 @@
     {% endif %}
   </form>
   <div class="d-flex gap-2">
-    <a href="{% url 'ventes:export_medicaments' %}" class="btn btn-outline-secondary" title="Telecharger en CSV (Excel)">
-      <i class="bi bi-download me-1"></i>CSV
+    <a href="{% url 'ventes:export_medicaments' %}" class="btn btn-outline-secondary" title="Telecharger en Excel">
+      <i class="bi bi-download me-1"></i>Excel
     </a>
     <a href="{% url 'medicaments:importer' %}" class="btn btn-outline-primary" title="Importer des medicaments depuis un CSV">
       <i class="bi bi-upload me-1"></i>Importer

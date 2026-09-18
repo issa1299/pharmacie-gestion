@@ -13,10 +13,10 @@ urlpatterns = [
     path('<int:pk>/mock-payment/', views.mock_payment, name='mock_payment'),
     path('webhook/', views.webhook_paiement, name='webhook'),
 
-    # ── Exports CSV ──
-    path('export/ventes/', exports.export_ventes_csv, name='export_ventes'),
-    path('export/medicaments/', exports.export_medicaments_csv, name='export_medicaments'),
-    path('export/clients/', exports.export_clients_csv, name='export_clients'),
-    path('export/mouvements/', exports.export_mouvements_csv, name='export_mouvements'),
-    path('export/vente/<int:pk>/', exports.export_vente_detail_csv, name='export_vente_detail'),
+    # ── Exports Excel (.xlsx) ──
+    path('export/ventes/', exports.export_ventes_xlsx, name='export_ventes'),
+    path('export/medicaments/', exports.export_medicaments_xlsx, name='export_medicaments'),
+    path('export/clients/', exports.export_clients_xlsx, name='export_clients'),
+    path('export/mouvements/', exports.export_mouvements_xlsx, name='export_mouvements'),
+    path('export/vente/<int:pk>/', exports.export_vente_detail_xlsx, name='export_vente_detail'),
 ]
