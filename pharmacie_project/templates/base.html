@@ -46,6 +46,9 @@
       z-index: 100;
       transition: transform 0.3s ease;
     }
+    .sidebar.collapsed {
+      transform: translateX(calc(-1 * var(--sidebar-w)));
+    }
 
     .sidebar-logo {
       display: flex;
@@ -162,6 +165,7 @@
       padding: 0 24px;
       z-index: 99;
       box-shadow: 0 1px 6px rgba(0,0,0,.04);
+      transition: left 0.3s ease;
     }
     .topbar-title {
       font-size: 15px;
@@ -233,6 +237,15 @@
       margin-top: var(--topbar-h);
       padding: 24px;
       min-height: calc(100vh - var(--topbar-h));
+      transition: margin-left 0.3s ease;
+    }
+    .sidebar.collapsed ~ .topbar,
+    .sidebar.collapsed ~ * .topbar {
+      left: 0;
+    }
+    .sidebar.collapsed ~ .main-content,
+    .sidebar.collapsed ~ * .main-content {
+      margin-left: 0;
     }
 
     /* ── CARDS ───────────────────────────────────── */
@@ -385,10 +398,73 @@
       border-color: var(--primary);
     }
 
-    /* ── FORMS ───────────────────────────────────── */
+    /* ── FORMS — Design système unifié ───────────── */
+    .form-control, .form-select {
+      border: 1.5px solid #E2E8E5;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 13.5px;
+      background-color: #FBFCFC;
+      transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
+      min-height: 42px;
+    }
+    .form-control:hover, .form-select:hover { border-color: #C9D6D0; }
     .form-control:focus, .form-select:focus {
       border-color: var(--primary-light);
+      background-color: #fff;
       box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 15%, transparent);
+    }
+    .form-control::placeholder { color: #B0BAB6; }
+    textarea.form-control { min-height: 96px; resize: vertical; }
+    input[type="file"].form-control { padding: 8px 12px; }
+    input[type="file"].form-control::file-selector-button {
+      border: none; border-radius: 8px;
+      background: var(--primary-bg); color: var(--primary);
+      padding: 8px 14px; margin-right: 12px;
+      font-weight: 600; font-size: 12.5px; cursor: pointer;
+      transition: background 0.15s;
+    }
+    input[type="file"].form-control::file-selector-button:hover { background: #D3EAE1; }
+
+    /* Labels */
+    .form-label { font-size: 12.5px; margin-bottom: 6px; color: #4A5A54; }
+    .form-label.fw-semibold { font-weight: 600 !important; }
+
+    /* Erreurs de validation */
+    .form-control.is-invalid, .form-select.is-invalid {
+      border-color: #E24B4A;
+      background-image: none;
+    }
+    .form-control.is-invalid:focus, .form-select.is-invalid:focus {
+      box-shadow: 0 0 0 3px rgba(226, 75, 74, .15);
+    }
+    .invalid-feedback, .text-danger.small { color: #C0392B !important; font-size: 12px; }
+    .invalid-feedback { display: block; margin-top: 5px; }
+
+    /* Checkboxes & radios (Django ajoute form-check-input) */
+    .form-check-input { width: 18px; height: 18px; cursor: pointer; }
+    .form-check-input:checked { background-color: var(--primary); border-color: var(--primary); }
+    .form-check-label { font-size: 13.5px; cursor: pointer; }
+
+    /* Aide contextuelle */
+    .form-text { font-size: 11.5px; color: #98A39F; }
+
+    /* Groupes d'input (recherche, etc.) */
+    .input-group-text {
+      background: #F4F6F5; border: 1.5px solid #E2E8E5; color: #7A8B85;
+    }
+
+    /* Sections de formulaire étendues */
+    .form-card { max-width: 100%; }
+    .form-section-title {
+      font-size: 12px; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.05em; color: #8A9993;
+      border-bottom: 1px solid #EFF3F1; padding-bottom: 7px;
+      margin: 22px 0 14px; display: flex; align-items: center; gap: 7px;
+    }
+    .form-section-title:first-child { margin-top: 0; }
+    .required-mark::after {
+      content: ' *'; color: #E24B4A; font-weight: 700;
     }
 
     /* ── MESSAGES DJANGO ─────────────────────────── */
@@ -532,7 +608,7 @@
 ════════════════════════════════════════════════ -->
 <header class="topbar">
   <div style="display:flex; align-items:center; gap:12px;">
-    <button class="btn-icon d-md-none" id="toggleSidebar">
+    <button class="btn-icon" id="toggleSidebar" title="Ouvrir/Fermer le menu">
       <i class="bi bi-list"></i>
     </button>
     <span class="topbar-title">{% block page_title %}Tableau de bord{% endblock %}</span>
@@ -603,9 +679,56 @@
 <script src="{% static 'js/bootstrap.bundle.min.js' %}"></script>
 
 <script>
-  // Toggle sidebar sur mobile
-  document.getElementById('toggleSidebar')?.addEventListener('click', () => {
-    document.getElementById('sidebar').classList.toggle('open');
+  // ── Toggle sidebar (ouvrir/fermer) ──
+  const sidebar = document.getElementById('sidebar');
+  const toggleBtn = document.getElementById('toggleSidebar');
+
+  // Restaurer l'état du sidebar
+  if (localStorage.getItem('sidebar-collapsed') === 'true') {
+    sidebar.classList.add('collapsed');
+  }
+
+  toggleBtn?.addEventListener('click', () => {
+    sidebar.classList.toggle('collapsed');
+    localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed'));
+  });
+
+  // ── Restaurer la position de scroll du sidebar ──
+  const sidebarNav = document.querySelector('.sidebar-nav');
+  const scrollKey = 'sidebar-scroll-top';
+  if (sidebarNav) {
+    const saved = sessionStorage.getItem(scrollKey);
+    if (saved) sidebarNav.scrollTop = parseInt(saved, 10);
+    sidebarNav.addEventListener('scroll', () => {
+      sessionStorage.setItem(scrollKey, sidebarNav.scrollTop);
+    });
+  }
+
+  // ── Toggle sidebar mobile (overlay) ──
+  if (window.innerWidth <= 768) {
+    toggleBtn?.addEventListener('click', () => {
+      sidebar.classList.toggle('open');
+    });
+  }
+
+  // ── Harmonisation automatique de tous les formulaires ──
+  (function () {
+    document.querySelectorAll('form').forEach(form => {
+      if (form.classList.contains('caisse-form')) return;
+      form.querySelectorAll('input, select, textarea').forEach(el => {
+        const t = el.type;
+        if (t === 'checkbox' || t === 'radio' || t === 'submit' || t === 'button' || t === 'hidden') return;
+        if (el.tagName === 'SELECT' && !el.classList.contains('form-select')) {
+          el.classList.add('form-select');
+        } else if (el.tagName !== 'SELECT' && !el.classList.contains('form-control')) {
+          el.classList.add('form-control');
+        }
+      });
+    });
+  })();
+
+  document.querySelectorAll('.form-label + [type=checkbox]').forEach(cb => {
+    cb.classList.add('form-check-input');
   });
 </script>
 
