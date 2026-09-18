@@ -491,8 +491,15 @@
 
     /* ── RESPONSIVE ──────────────────────────────── */
     @media (max-width: 768px) {
-      .sidebar { transform: translateX(-100%); }
+      .sidebar { transform: translateX(-100%); z-index: 200; }
       .sidebar.open { transform: translateX(0); }
+      .sidebar.open ~ .main-content::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,.35);
+        z-index: 199;
+      }
       .topbar, .main-content { left: 0; margin-left: 0; }
       .alert-menu { width: min(320px, calc(100vw - 24px)); }
     }
@@ -702,14 +709,31 @@
   const sidebar = document.getElementById('sidebar');
   const toggleBtn = document.getElementById('toggleSidebar');
 
-  // Restaurer l'état du sidebar
-  if (localStorage.getItem('sidebar-collapsed') === 'true') {
+  function isMobile() { return window.innerWidth <= 768; }
+
+  // Restaurer l'état du sidebar (desktop uniquement)
+  if (!isMobile() && localStorage.getItem('sidebar-collapsed') === 'true') {
     sidebar.classList.add('collapsed');
   }
 
   toggleBtn?.addEventListener('click', () => {
-    sidebar.classList.toggle('collapsed');
-    localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed'));
+    if (isMobile()) {
+      // Mobile : toggle la classe 'open' pour afficher/masquer le panneau overlay
+      sidebar.classList.toggle('open');
+    } else {
+      // Desktop : toggle la classe 'collapsed' pour réduire/étendre
+      sidebar.classList.toggle('collapsed');
+      localStorage.setItem('sidebar-collapsed', sidebar.classList.contains('collapsed'));
+    }
+  });
+
+  // Fermer le sidebar mobile en cliquant à l'extérieur
+  document.addEventListener('click', (e) => {
+    if (isMobile() && sidebar.classList.contains('open')) {
+      if (!sidebar.contains(e.target) && e.target.id !== 'toggleSidebar' && !toggleBtn?.contains(e.target)) {
+        sidebar.classList.remove('open');
+      }
+    }
   });
 
   // ── Restaurer la position de scroll du sidebar ──
@@ -720,13 +744,6 @@
     if (saved) sidebarNav.scrollTop = parseInt(saved, 10);
     sidebarNav.addEventListener('scroll', () => {
       sessionStorage.setItem(scrollKey, sidebarNav.scrollTop);
-    });
-  }
-
-  // ── Toggle sidebar mobile (overlay) ──
-  if (window.innerWidth <= 768) {
-    toggleBtn?.addEventListener('click', () => {
-      sidebar.classList.toggle('open');
     });
   }
 

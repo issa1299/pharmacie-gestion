@@ -101,6 +101,55 @@
       </tbody>
     </table>
   </div>
+
+  <!-- VERSION MOBILE : CARTES -->
+  <div class="mobile-cards p-3">
+    {% for u in utilisateurs %}
+    <div class="mc-card">
+      <div class="mc-top">
+        <div class="d-flex align-items-center gap-2">
+          <div style="width:34px; height:34px; border-radius:50%;
+                      background:#1D9E75; display:flex; align-items:center;
+                      justify-content:center; font-size:13px; font-weight:700; color:#fff; flex-shrink:0;">
+            {{ u.first_name|first|upper }}{{ u.last_name|first|upper }}
+          </div>
+          <div>
+            <div class="mc-title">{{ u.get_full_name|default:u.username }}</div>
+            <div style="font-size:11px; color:#aaa;">@{{ u.username }}</div>
+          </div>
+        </div>
+        <div class="d-flex gap-1">
+          {% if u.is_superuser %}
+          <span class="badge px-2 py-1 rounded-2" style="background:#EEEDFE; color:#534AB7;">Super admin</span>
+          {% elif u.profile.role == 'patron' %}
+          <span class="badge px-2 py-1 rounded-2" style="background:#EEEDFE; color:#534AB7;">Patron</span>
+          {% elif u.profile.role == 'pharmacien' %}
+          <span class="badge px-2 py-1 rounded-2" style="background:var(--primary-bg); color:var(--primary);">Pharmacien</span>
+          {% else %}
+          <span class="badge px-2 py-1 rounded-2" style="background:#F0F0F0; color:#555;">Caissier</span>
+          {% endif %}
+        </div>
+      </div>
+      <div class="mc-rows">
+        <div><span class="mc-label">Email</span><div class="mc-val">{{ u.email|default:"-" }}</div></div>
+        <div><span class="mc-label">Telephone</span><div class="mc-val">{{ u.profile.telephone|default:"-" }}</div></div>
+        <div><span class="mc-label">Statut</span><div class="mc-val">{% if u.is_active %}Actif{% else %}Inactif{% endif %}</div></div>
+        <div><span class="mc-label">Cree le</span><div class="mc-val">{{ u.date_joined|date:site_params.format_date }}</div></div>
+      </div>
+      <div class="mc-actions">
+        <a href="{% url 'accounts:modifier' u.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Modifier</a>
+        {% if u != request.user %}
+        <a href="{% url 'accounts:supprimer' u.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-1"></i>Supprimer</a>
+        {% endif %}
+      </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-4" style="color:#aaa;">
+      <i class="bi bi-people fs-2 d-block mb-2"></i>Aucun utilisateur
+    </div>
+    {% endfor %}
+  </div>
+
 </div>
 
 {% endblock %}
