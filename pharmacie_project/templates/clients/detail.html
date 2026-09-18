@@ -2,6 +2,34 @@
 {% block title %}{{ client.nom }} {{ client.prenom }} — PharmaGest{% endblock %}
 {% block page_title %}Fiche client{% endblock %}
 
+{% block extra_css %}
+<style>
+  .facture-modal {
+    display: none; position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,.45); align-items: center; justify-content: center;
+  }
+  .facture-modal.open { display: flex; }
+  .facture-sheet {
+    background: #fff; width: 95%; max-width: 420px; max-height: 85vh;
+    border-radius: 14px; overflow-y: auto;
+    animation: factureSlideUp .25s ease;
+  }
+  @keyframes factureSlideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+  .facture-head {
+    background: var(--primary); color: #fff; padding: 14px 18px;
+    border-radius: 14px 14px 0 0;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .facture-head h5 { margin: 0; font-size: 15px; font-weight: 700; }
+  .facture-body { padding: 18px; font-family: 'Courier New', monospace; font-size: 13px; }
+  .facture-sep { border: none; border-top: 1px dashed #ccc; margin: 10px 0; }
+  .facture-row { display: flex; justify-content: space-between; margin: 4px 0; }
+  .facture-row-indent { display: flex; justify-content: space-between; padding-left: 10px; color: #555; }
+  .facture-total { display: flex; justify-content: space-between; font-weight: bold; font-size: 15px; margin-top: 8px; padding-top: 8px; border-top: 1px dashed #aaa; }
+  .facture-footer { text-align: center; color: #888; font-size: 11px; margin-top: 12px; }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row">
   <div class="col-12 col-md-4">
@@ -69,7 +97,11 @@
             <tbody>
               {% for v in ventes %}
               <tr>
-                <td><a href="{% url 'ventes:detail' pk=v.pk %}">{{ v.numero_facture }}</a></td>
+                <td>
+                  <a href="#" class="facture-link" data-pk="{{ v.pk }}" style="text-decoration:none; cursor:pointer;">
+                    <i class="bi bi-eye me-1"></i>{{ v.numero_facture }}
+                  </a>
+                </td>
                 <td>{{ v.date_vente|date:"d/m/Y H:i" }}</td>
                 <td>{{ v.total|floatformat:0 }} FCFA</td>
                 <td>
@@ -112,4 +144,83 @@
     </div>
   </div>
 </div>
+
+<!-- ══ MODAL FACTURE ══ -->
+<div class="facture-modal" id="facture-modal">
+  <div class="facture-sheet">
+    <div class="facture-head">
+      <h5><i class="bi bi-receipt-cutoff me-2"></i><span id="fm-numero"></span></h5>
+      <button type="button" class="btn-icon" id="facture-close" style="background:rgba(255,255,255,.2);color:#fff;width:30px;height:30px;">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="facture-body">
+      <div style="text-align:center;font-weight:bold;font-size:16px;margin-bottom:4px;" id="fm-pharmacie"></div>
+      <hr class="facture-sep">
+      <div class="facture-row"><span>Date :</span><span id="fm-date"></span></div>
+      <div class="facture-row"><span>Client :</span><span id="fm-client"></span></div>
+      <div class="facture-row"><span>Caissier :</span><span id="fm-caissier"></span></div>
+      <div class="facture-row"><span>Paiement :</span><span id="fm-paiement"></span></div>
+      <hr class="facture-sep">
+      <div id="fm-lignes"></div>
+      <hr class="facture-sep">
+      <div class="facture-row"><span>Sous-total</span><span id="fm-total"></span></div>
+      <div class="facture-row" id="fm-remise-row" style="display:none;"><span>Remise</span><span id="fm-remise" style="color:#e24b4a;"></span></div>
+      <div class="facture-total"><span>NET A PAYER</span><span id="fm-net"></span></div>
+      <div style="text-align:center;margin-top:10px;font-weight:bold;">
+        <span id="fm-statut"></span>
+      </div>
+      <div class="facture-footer">Merci de votre confiance !</div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  const modal = document.getElementById('facture-modal');
+  const devise = '{{ site_params.devise|default:"FCFA" }}';
+  const fmt = n => new Intl.NumberFormat('fr-FR').format(Math.round(n)) + ' ' + devise;
+
+  function ouvrirFacture(pk) {
+    fetch('/ventes/' + pk + '/json/')
+      .then(r => r.json())
+      .then(d => {
+        document.getElementById('fm-numero').textContent = d.numero_facture;
+        document.getElementById('fm-pharmacie').textContent = d.nom_pharmacie;
+        document.getElementById('fm-date').textContent = d.date;
+        document.getElementById('fm-client').textContent = d.client;
+        document.getElementById('fm-caissier').textContent = d.caissier;
+        document.getElementById('fm-paiement').textContent = d.mode_paiement;
+        document.getElementById('fm-statut').textContent = d.statut === 'validee' ? '*** VENTE VALIDEE ***' : '*** VENTE ANNULEE ***';
+        document.getElementById('fm-total').textContent = fmt(d.total);
+        document.getElementById('fm-net').textContent = fmt(d.net_a_payer);
+        const remiseRow = document.getElementById('fm-remise-row');
+        if (d.remise > 0) {
+          remiseRow.style.display = 'flex';
+          document.getElementById('fm-remise').textContent = '-' + fmt(d.remise);
+        } else {
+          remiseRow.style.display = 'none';
+        }
+        const lignesEl = document.getElementById('fm-lignes');
+        lignesEl.innerHTML = '';
+        d.lignes.forEach(l => {
+          lignesEl.innerHTML +=
+            '<div class="facture-row" style="font-weight:500;"><span>' + l.nom + '</span></div>' +
+            '<div class="facture-row-indent"><span>x' + l.quantite + ' @ ' + fmt(l.prix_unitaire) + '</span><span>' + fmt(l.sous_total) + '</span></div>';
+        });
+        modal.classList.add('open');
+      });
+  }
+
+  document.querySelectorAll('.facture-link').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      ouvrirFacture(link.dataset.pk);
+    });
+  });
+
+  document.getElementById('facture-close').addEventListener('click', () => modal.classList.remove('open'));
+  modal.addEventListener('click', e => { if (e.target === modal) modal.classList.remove('open'); });
+</script>
 {% endblock %}

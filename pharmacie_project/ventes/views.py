@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import F, Q
+from django.http import JsonResponse
 from django.utils import timezone
 from decimal import Decimal, InvalidOperation
 from .models import Vente, LigneVente
@@ -168,6 +169,33 @@ def detail_vente(request, pk):
         'lignes': lignes,
         'site_params': params,
         'params': params,
+    })
+
+@login_required
+def detail_vente_json(request, pk):
+    """Retourne les détails d'une vente en JSON (pour modal côté client)."""
+    vente = get_object_or_404(Vente, pk=pk)
+    lignes = vente.lignes.select_related('medicament').all()
+    params, _ = Parametres.objects.get_or_create(pk=1)
+    return JsonResponse({
+        'numero_facture': vente.numero_facture,
+        'date': vente.date_vente.strftime('%d/%m/%Y %H:%M'),
+        'client': str(vente.client) if vente.client else 'Anonyme',
+        'caissier': str(vente.utilisateur) if vente.utilisateur else '—',
+        'mode_paiement': vente.get_mode_paiement_display(),
+        'statut': vente.statut,
+        'statut_paiement': vente.get_statut_paiement_display(),
+        'total': float(vente.total),
+        'remise': float(vente.remise),
+        'net_a_payer': float(vente.net_a_payer),
+        'nom_pharmacie': params.nom_pharmacie or 'PharmaGest',
+        'devise': params.devise or 'FCFA',
+        'lignes': [{
+            'nom': l.medicament.nom,
+            'quantite': l.quantite,
+            'prix_unitaire': float(l.prix_unitaire),
+            'sous_total': float(l.sous_total),
+        } for l in lignes],
     })
 
 @login_required
