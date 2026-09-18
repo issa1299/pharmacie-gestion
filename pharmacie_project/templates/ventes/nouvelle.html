@@ -246,14 +246,20 @@
      <div class="search-panel">
        <div class="sp-title"><i class="bi bi-search me-1"></i> Recherche Produit</div>
 
-       <div class="search-box">
-         <i class="bi bi-search"></i>
-         <input type="text" id="scan-input" class="search-input" autocomplete="off"
-                placeholder="Rechercher par nom, code-barres…">
-         <button type="button" class="search-clear" id="search-clear" aria-label="Effacer la recherche">
-           <i class="bi bi-x-circle-fill"></i>
-         </button>
-       </div>
+        <div class="search-box">
+          <i class="bi bi-search"></i>
+          <input type="text" id="scan-input" class="search-input" autocomplete="off"
+                 placeholder="Rechercher par nom, code-barres…">
+          <button type="button" class="search-clear" id="search-clear" aria-label="Effacer la recherche">
+            <i class="bi bi-x-circle-fill"></i>
+          </button>
+        </div>
+        <div class="d-flex gap-2 mt-2">
+          <button type="button" class="btn btn-outline-success btn-sm flex-fill" id="btn-scan-barcode">
+            <i class="bi bi-camera me-1"></i>Scanner code-barres
+          </button>
+        </div>
+        <div id="scanner-region" style="display:none; margin-top:10px; border-radius:10px; overflow:hidden;"></div>
        <div class="scan-hint">
          <span class="kbd">Entrée</span> ajouter au ticket · <span class="kbd">F2</span> recherche · <span class="kbd">F9</span> valider la vente
        </div>
@@ -333,6 +339,8 @@
 </div>
 {% endblock %}
 {% block extra_js %}
+{% load static %}
+<script src="{% static 'js/html5-qrcode.min.js' %}"></script>
 <script>
   const PRODUITS = [
     {% for m in medicaments %}{
@@ -595,6 +603,62 @@
     if (e.key === 'F2') { e.preventDefault(); scan.focus(); scan.select(); }
     if (e.key === 'Escape') { e.preventDefault(); vider(); }
   });
+
+  // ── SCANNER CODE-BARRES ──
+  let html5QrCode = null;
+  let scannerRunning = false;
+
+  $('btn-scan-barcode').addEventListener('click', () => {
+    const region = $('scanner-region');
+    if (scannerRunning) {
+      arreterScanner();
+      return;
+    }
+    region.style.display = 'block';
+    $('btn-scan-barcode').innerHTML = '<i class="bi bi-stop-circle me-1"></i>Arrêter le scanner';
+
+    if (!html5QrCode) {
+      html5QrCode = new Html5Qrcode('scanner-region');
+    }
+    html5QrCode.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 280, height: 120 }, aspectRatio: 2.0 },
+      (decodedText) => {
+        const p = PRODUITS.find(x => x.code_barre && x.code_barre === decodedText);
+        if (p && p.stock > 0) {
+          ajouter(p);
+          scan.value = '';
+          terme = '';
+          rendreGrille();
+          arreterScanner();
+        } else if (p && p.stock <= 0) {
+          scan.value = decodedText;
+          scan.select();
+        } else {
+          scan.value = decodedText;
+          terme = decodedText.toLowerCase();
+          rendreGrille();
+        }
+      },
+      () => {}
+    ).then(() => { scannerRunning = true; })
+     .catch(err => {
+       region.style.display = 'none';
+       $('btn-scan-barcode').innerHTML = '<i class="bi bi-camera me-1"></i>Scanner code-barres';
+       alert('Camera non disponible : ' + err);
+     });
+  });
+
+  function arreterScanner() {
+    if (html5QrCode && scannerRunning) {
+      html5QrCode.stop().then(() => {
+        html5QrCode.clear();
+        scannerRunning = false;
+        $('scanner-region').style.display = 'none';
+        $('btn-scan-barcode').innerHTML = '<i class="bi bi-camera me-1"></i>Scanner code-barres';
+      }).catch(() => {});
+    }
+  }
 
   // ── INIT ──
   rendreGrille(); rendreTicket(); scan.focus();
