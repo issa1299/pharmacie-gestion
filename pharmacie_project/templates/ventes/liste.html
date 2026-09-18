@@ -50,9 +50,9 @@
           <td><strong>{{ vente.total }} {{ site_params.devise }}</strong></td>
           <td>
             {% if vente.statut == 'validee' %}
-            <span class="badge badge-stock-ok px-2 py-1 rounded-2">✓ Validée</span>
+            <span class="badge badge-stock-ok px-2 py-1 rounded-2">Validée</span>
             {% else %}
-            <span class="badge badge-stock-low px-2 py-1 rounded-2">✗ Annulée</span>
+            <span class="badge badge-stock-low px-2 py-1 rounded-2">Annulée</span>
             {% endif %}
           </td>
           <td style="font-size:12px; color:#aaa;">
@@ -77,6 +77,38 @@
         {% endfor %}
       </tbody>
     </table>
+  </div>
+
+  <!-- VERSION MOBILE : CARTES -->
+  <div class="mobile-cards p-3">
+    {% for vente in ventes %}
+    <div class="mc-card">
+      <div class="mc-top">
+        <div>
+          <div class="mc-title" style="font-family:monospace;">{{ vente.numero_facture }}</div>
+          <div style="font-size:12px;color:#aaa;">{{ vente.date_vente|date:"d/m/Y H:i" }}</div>
+        </div>
+        {% if vente.statut == 'validee' %}
+        <span class="mc-badge badge-stock-ok">Validee</span>
+        {% else %}
+        <span class="mc-badge badge-stock-low">Annulee</span>
+        {% endif %}
+      </div>
+      <div class="mc-rows">
+        <div><span class="mc-label">Client</span><div class="mc-val">{{ vente.client|default:"Anonyme" }}</div></div>
+        <div><span class="mc-label">Total</span><div class="mc-val" style="font-weight:700;">{{ vente.total }} {{ site_params.devise }}</div></div>
+      </div>
+      <div class="mc-actions">
+        <a href="{% url 'ventes:detail' vente.pk %}" class="btn btn-sm btn-outline-primary">
+          <i class="bi bi-eye me-1"></i>Detail
+        </a>
+      </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-4" style="color:#aaa;">
+      <i class="bi bi-receipt fs-2 d-block mb-2"></i>Aucune vente
+    </div>
+    {% endfor %}
   </div>
 </div>
 

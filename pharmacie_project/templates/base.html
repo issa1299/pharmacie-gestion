@@ -311,6 +311,25 @@
     .table td { padding: 11px 14px; vertical-align: middle; }
     .table tbody tr:hover { background: #F9FBF9; }
 
+    /* ── MOBILE CARD VIEW (tables) ───────────────── */
+    .mobile-cards { display: none; }
+    @media (max-width: 768px) {
+      .table-responsive { display: none !important; }
+      .mobile-cards { display: flex !important; flex-direction: column; gap: 10px; }
+      .mc-card {
+        background: #fff; border: 1px solid #E4EBE8; border-radius: 10px;
+        padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,.04);
+      }
+      .mc-top { display: flex; justify-content: space-between; align-items: flex-start; }
+      .mc-title { font-size: 14px; font-weight: 700; color: #1A1A1A; }
+      .mc-badge { font-size: 11px; padding: 3px 8px; border-radius: 999px; font-weight: 600; }
+      .mc-rows { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 13px; }
+      .mc-label { color: #888; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+      .mc-val { color: #1A1A1A; font-weight: 500; }
+      .mc-actions { display: flex; gap: 8px; justify-content: flex-end; padding-top: 6px; border-top: 1px solid #F0F2F1; }
+    }
+
     /* ── BADGES ──────────────────────────────────── */
     .badge-stock-ok   { background: #E8F5F0; color: var(--primary); }
     .badge-stock-low  { background: #FFF4F4; color: #C0392B; }

@@ -192,11 +192,45 @@
     .caisse-wrap { flex-direction: column; }
     .caisse-right { width: 100%; position: static; }
     .prod-grid { max-height: none; }
+    .desktop-ticket { display: none !important; }
   }
   @media (max-width: 480px) {
     .prod-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
     .prod-thumb { height: 70px; }
   }
+  .fab-cart {
+    display: none; position: fixed; bottom: 24px; right: 24px; z-index: 150;
+    width: 58px; height: 58px; border-radius: 50%;
+    background: var(--primary); color: #fff; border: none;
+    box-shadow: 0 4px 16px rgba(15,110,86,.35);
+    font-size: 24px; cursor: pointer;
+    align-items: center; justify-content: center;
+  }
+  .fab-badge {
+    position: absolute; top: -4px; right: -4px;
+    background: #E24B4A; color: #fff; font-size: 11px; font-weight: 700;
+    width: 22px; height: 22px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    border: 2px solid #fff;
+  }
+  @media (max-width: 991px) { .fab-cart { display: flex; } }
+  .cart-overlay {
+    display: none; position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,.45); align-items: flex-end; justify-content: center;
+  }
+  .cart-overlay.open { display: flex; }
+  .cart-sheet {
+    background: #fff; width: 100%; max-width: 480px; max-height: 85vh;
+    border-radius: 16px 16px 0 0; overflow-y: auto;
+    animation: slideUp .25s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .cart-sheet-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 20px; border-bottom: 1px solid #E8EBE9;
+    position: sticky; top: 0; background: #fff; z-index: 1;
+  }
+  .cart-sheet-head h5 { margin: 0; font-size: 16px; font-weight: 700; }
 </style>
 {% endblock %}
 
@@ -236,86 +270,70 @@
      <div class="prod-grid" id="prod-grid"></div>
   </div>
 
-  <!-- ══ Colonne droite : ticket ══ -->
-  <div class="caisse-right">
-    <form method="post" id="form-vente" action="{% url 'ventes:nouvelle' %}">
-      {% csrf_token %}
-      <div class="ticket">
-        <div class="ticket-head">
-          <h5><i class="bi bi-receipt-cutoff"></i> Ticket en cours</h5>
-          <span class="ticket-count" id="tk-count">0 article</span>
-        </div>
+  <!-- ══ Colonne droite : ticket (desktop) ══ -->
+  <div class="caisse-right desktop-ticket">
+    <div id="ticket-desktop"></div>
+  </div>
+</div>
 
-        <div class="px-3 pt-3 row g-2">
-          <div class="col-12">
-            <select name="client" id="client-select" class="form-select form-select-sm">
-              <option value="">👤 Client de passage</option>
-              {% for cl in clients %}
-              <option value="{{ cl.pk }}">{{ cl.nom }} {{ cl.prenom }}</option>
-              {% endfor %}
-            </select>
-          </div>
-          <div class="col-6">
-            <select name="mode_paiement" id="mode-select" class="form-select form-select-sm">
-              <option value="especes">💵 Espèces</option>
-              <option value="orange_money">📱 Orange Money</option>
-              <option value="moov_money">📱 Moov Money</option>
-              <option value="carte">💳 Carte</option>
-            </select>
-          </div>
-          <div class="col-6">
-            <input type="number" name="remise" id="remise-input" class="form-control form-control-sm"
-                   min="0" step="1" value="0" placeholder="Remise">
-          </div>
-        </div>
+<!-- ══ BOUTON PANIER FLOTTANT (mobile) ══ -->
+<button type="button" class="fab-cart" id="fab-cart" title="Voir le panier">
+  <i class="bi bi-cart3"></i>
+  <span class="fab-badge" id="fab-badge">0</span>
+</button>
 
-        <div class="ticket-lines mt-2" id="tk-lines">
-          <div class="ticket-empty">
-            <i class="bi bi-basket2" style="font-size:26px"></i><br>
-            Aucun article — scannez ou cliquez un produit
-          </div>
-        </div>
-
-        <div id="lignes-container"></div>
-
-        <div class="ticket-totals">
-          <div class="tt-row"><span>Sous-total</span><span id="tt-st">0 {{ site_params.devise|default:'FCFA' }}</span></div>
-          <div class="tt-row"><span>Remise</span><span id="tt-remise">0 {{ site_params.devise|default:'FCFA' }}</span></div>
-          <div class="tt-row net"><span>NET À PAYER</span><span id="tt-net">0 {{ site_params.devise|default:'FCFA' }}</span></div>
-        </div>
-
-        <div class="quick-cash" id="quick-cash">
-          <button type="button" data-cash="500">500</button>
-          <button type="button" data-cash="1000">1 000</button>
-          <button type="button" data-cash="2000">2 000</button>
-          <button type="button" data-cash="5000">5 000</button>
-          <button type="button" data-cash="10000">10 000</button>
-        </div>
-        <div class="px-3 pb-2">
-          <input type="number" id="montant-recu" class="form-control form-control-sm" min="0" step="1" placeholder="Montant reçu du client…">
-          <div class="rendu-box" id="rendu-box">
-            <span class="rendu-label">Monnaie à rendre</span>
-            <span class="rendu-val" id="rendu-val">—</span>
-          </div>
-        </div>
-
-        <div class="ticket-actions">
-          <button type="submit" class="btn-validate" id="btn-valider" disabled>
-            <i class="bi bi-check2-circle"></i> Valider la vente
-          </button>
-          <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-vider">
-            <i class="bi bi-x-lg"></i> Vider le ticket
-          </button>
-          <div class="kbd-hint"><span class="kbd">F9</span> valider · <span class="kbd">Échap</span> vider le ticket</div>
-        </div>
+<!-- ══ MODAL PANIER (mobile) ══ -->
+<div class="cart-overlay" id="cart-overlay">
+  <div class="cart-sheet">
+    <div class="cart-sheet-head">
+      <h5><i class="bi bi-cart3 me-2"></i>Panier</h5>
+      <button type="button" class="btn-icon" id="cart-close" style="font-size:18px;">
+        <i class="bi bi-x-lg"></i>
+      </button>
+    </div>
+    <div class="px-3 pt-3 row g-2">
+      <div class="col-12">
+        <select name="client" id="client-select-mobile" class="form-select form-select-sm">
+          <option value="">Client de passage</option>
+          {% for cl in clients %}
+          <option value="{{ cl.pk }}">{{ cl.nom }} {{ cl.prenom }}</option>
+          {% endfor %}
+        </select>
       </div>
-    </form>
+      <div class="col-6">
+        <select name="mode_paiement" id="mode-select-mobile" class="form-select form-select-sm">
+          <option value="especes">Especes</option>
+          <option value="orange_money">Orange Money</option>
+          <option value="moov_money">Moov Money</option>
+          <option value="carte">Carte</option>
+        </select>
+      </div>
+      <div class="col-6">
+        <input type="number" name="remise" id="remise-input-mobile" class="form-control form-control-sm"
+               min="0" step="1" value="0" placeholder="Remise">
+      </div>
+    </div>
+    <div class="ticket-lines mt-2" id="tk-lines-mobile">
+      <div class="ticket-empty"><i class="bi bi-basket2" style="font-size:26px"></i><br>Vide</div>
+    </div>
+    <div class="ticket-totals">
+      <div class="tt-row"><span>Sous-total</span><span id="tt-st-m">0 FCFA</span></div>
+      <div class="tt-row"><span>Remise</span><span id="tt-remise-m">0 FCFA</span></div>
+      <div class="tt-row net"><span>NET</span><span id="tt-net-m">0 FCFA</span></div>
+    </div>
+    <div class="px-3 pb-2">
+      <input type="number" id="montant-recu-mobile" class="form-control form-control-sm" min="0" step="1" placeholder="Montant recu…">
+    </div>
+    <div class="ticket-actions">
+      <button type="button" class="btn-validate" id="btn-valider-mobile" disabled>
+        <i class="bi bi-check2-circle"></i> Valider la vente
+      </button>
+    </div>
   </div>
 </div>
 {% endblock %}
 {% block extra_js %}
 <script>
-  // ══ 1. DONNÉES PRODUITS (injectées par Django) ══
   const PRODUITS = [
     {% for m in medicaments %}{
       id: {{ m.pk }},
@@ -330,15 +348,11 @@
   ];
   const DEVISE = "{{ site_params.devise|default:'FCFA' }}";
   const fmt = n => new Intl.NumberFormat('fr-FR').format(Math.round(n)) + ' ' + DEVISE;
-
-  const panier = new Map();   // id -> {p, qte}
-  let catActive = 0;          // 0 = toutes les catégories
-  let terme = '';
-
+  const panier = new Map();
+  let catActive = 0, terme = '';
   const $ = id => document.getElementById(id);
 
-  // ══ 2. GRILLE PRODUITS ══
-  // Couleur de vignette déterministe (évite le vert en double côte à côte)
+  // ── GRILLE PRODUITS ──
   const thumbClass = p => 'thumb-' + (p.id % 5);
 
   function rendreGrille() {
@@ -349,36 +363,27 @@
       (!terme || p.nom.toLowerCase().includes(terme) || p.code_barre.includes(terme))
     );
     if (!visible.length) {
-      grille.innerHTML =
-        '<div class="ticket-empty" style="grid-column:1/-1">' +
-        '<i class="bi bi-search" style="font-size:24px"></i><br>Aucun produit trouvé</div>';
+      grille.innerHTML = '<div class="ticket-empty" style="grid-column:1/-1"><i class="bi bi-search" style="font-size:24px"></i><br>Aucun produit trouve</div>';
       return;
     }
     visible.forEach(p => {
       const c = document.createElement('div');
       c.className = 'prod-card' + (p.stock > 0 ? ' dispo' : ' out');
-      const vignette = p.image
-        ? '<img src="' + p.image + '" alt="" loading="lazy" ' +
-          'onerror="this.remove();this.parentNode.classList.add(\'' + thumbClass(p) + '\')">'
-        : '';
+      const vignette = p.image ? '<img src="' + p.image + '" alt="" loading="lazy" onerror="this.remove();this.parentNode.classList.add(\'' + thumbClass(p) + '\')">' : '';
       c.innerHTML =
-        (p.stock > 0 ? '<span class="prod-ok" title="Disponible"><i class="bi bi-check-lg"></i></span>' : '') +
+        (p.stock > 0 ? '<span class="prod-ok"><i class="bi bi-check-lg"></i></span>' : '') +
         '<div class="prod-thumb ' + thumbClass(p) + '">' + vignette +
-          '<span class="thumb-dosage">' + p.stock + ' en stock</span>' +
-          '<span class="thumb-nom">' + p.nom + '</span>' +
-        '</div>' +
-        '<div class="prod-body">' +
-          '<div class="prod-name">' + p.nom + '</div>' +
-          '<div class="prod-stock' + (p.stock <= 5 ? ' low' : '') + '">Stock : ' + p.stock + '</div>' +
-          '<div class="prod-price">' + fmt(p.prix) + '</div>' +
-        '</div>';
-      c.title = p.nom + (p.code_barre ? ' — ' + p.code_barre : '');
+        '<span class="thumb-dosage">' + p.stock + ' en stock</span>' +
+        '<span class="thumb-nom">' + p.nom + '</span></div>' +
+        '<div class="prod-body"><div class="prod-name">' + p.nom + '</div>' +
+        '<div class="prod-stock' + (p.stock <= 5 ? ' low' : '') + '">Stock : ' + p.stock + '</div>' +
+        '<div class="prod-price">' + fmt(p.prix) + '</div></div>';
       if (p.stock > 0) c.addEventListener('click', () => ajouter(p));
       grille.appendChild(c);
     });
   }
 
-  // ══ 3. CHIPS CATÉGORIES (rendues côté serveur) ══
+  // ── CHIPS CATEGORIES ──
   document.querySelectorAll('#cat-chips .chip').forEach(chip => {
     chip.addEventListener('click', () => {
       document.querySelectorAll('#cat-chips .chip').forEach(c => c.classList.remove('active'));
@@ -388,7 +393,7 @@
     });
   });
 
-  // ══ 4. RECHERCHE + SCAN CODE-BARRES ══
+  // ── RECHERCHE ──
   const scan = $('scan-input');
   const clearBtn = $('search-clear');
   scan.addEventListener('input', () => {
@@ -396,55 +401,30 @@
     clearBtn.classList.toggle('show', scan.value.length > 0);
     rendreGrille();
   });
-  // Effacer la recherche (sans perdre le focus, pour re-scanner aussitôt)
   clearBtn.addEventListener('click', () => {
-    scan.value = '';
-    terme = '';
+    scan.value = ''; terme = '';
     clearBtn.classList.remove('show');
-    rendreGrille();
-    scan.focus();
+    rendreGrille(); scan.focus();
   });
-  // Échap dans le champ = vider la recherche (et non vider le ticket)
   scan.addEventListener('keydown', e => {
-    if (e.key === 'Escape' && scan.value) {
-      e.preventDefault();
-      e.stopPropagation();
-      clearBtn.click();
-    }
+    if (e.key === 'Escape' && scan.value) { e.preventDefault(); e.stopPropagation(); clearBtn.click(); }
   }, true);
   scan.addEventListener('keydown', e => {
     if (e.key !== 'Enter') return;
     e.preventDefault();
     const brut = scan.value.trim();
     if (!brut) return;
-    const bas = brut.toLowerCase();
-    // Scan : correspondance exacte code-barres d'abord, puis nom unique
     let p = PRODUITS.find(x => x.code_barre && x.code_barre === brut);
-    if (!p) {
-      const trouves = PRODUITS.filter(x => x.nom.toLowerCase().includes(bas));
-      if (trouves.length === 1) p = trouves[0];
-    }
-    if (p && p.stock > 0) {
-      ajouter(p);
-      scan.value = '';
-      terme = '';
-      clearBtn.classList.remove('show');
-      rendreGrille();
-    } else if (p) {
-      scan.select();   // stock 0 → on garde la saisie pour correction
-    }
+    if (!p) { const trouves = PRODUITS.filter(x => x.nom.toLowerCase().includes(brut.toLowerCase())); if (trouves.length === 1) p = trouves[0]; }
+    if (p && p.stock > 0) { ajouter(p); scan.value = ''; terme = ''; clearBtn.classList.remove('show'); rendreGrille(); }
+    else if (p) { scan.select(); }
   });
-</script>
-<script>
-  // ══ 5. TICKET ══
+
+  // ── PANIER ──
   function ajouter(p) {
     const ligne = panier.get(p.id);
-    if (ligne) {
-      if (ligne.qte >= p.stock) return;      // plafond = stock disponible
-      ligne.qte += 1;
-    } else {
-      panier.set(p.id, { p, qte: 1 });
-    }
+    if (ligne) { if (ligne.qte >= p.stock) return; ligne.qte += 1; }
+    else { panier.set(p.id, { p, qte: 1 }); }
     rendreTicket();
   }
   function changerQte(id, delta) {
@@ -455,47 +435,32 @@
     rendreTicket();
   }
   function supprimer(id) { panier.delete(id); rendreTicket(); }
+  function totalBrut() { let t = 0; panier.forEach(l => { t += l.p.prix * l.qte; }); return t; }
 
-  function totalBrut() {
-    let t = 0;
-    panier.forEach(l => { t += l.p.prix * l.qte; });
-    return t;
-  }
-
-  function rendreTicket() {
-    const conteneur = $('tk-lines');
-    const cache = $('lignes-container');
-    const total = totalBrut();
-    const nb = [...panier.values()].reduce((s, l) => s + l.qte, 0);
-
+  function renderLinesHTML(target) {
     if (!panier.size) {
-      conteneur.innerHTML =
-        '<div class="ticket-empty"><i class="bi bi-basket2" style="font-size:26px"></i><br>' +
-        'Aucun article — scannez ou cliquez un produit</div>';
-    } else {
-      conteneur.innerHTML = '';
-      panier.forEach(l => {
-        const div = document.createElement('div');
-        div.className = 'tk-line';
-        const thumbHtml = l.p.image
-          ? '<img src="' + l.p.image + '" alt="" loading="lazy">'
-          : '<i class="bi bi-capsule tk-thumb-icon"></i>';
-        div.innerHTML =
-          '<div class="tk-thumb">' + thumbHtml + '</div>' +
-          '<div class="tk-info"><div class="tk-nom">' + l.p.nom + '</div>' +
-          '<div class="tk-pu">' + fmt(l.p.prix) + ' / unité</div></div>' +
-          '<div class="tk-qty">' +
-            '<button type="button" class="qty-btn" data-act="-" data-id="' + l.p.id + '">−</button>' +
-            '<span class="qty-val">' + l.qte + '</span>' +
-            '<button type="button" class="qty-btn" data-act="+" data-id="' + l.p.id + '">+</button>' +
-          '</div>' +
-          '<div class="tk-st">' + fmt(l.p.prix * l.qte) + '</div>' +
-          '<button type="button" class="tk-del" data-act="x" data-id="' + l.p.id + '">' +
-          '<i class="bi bi-x-lg"></i></button>';
-        conteneur.appendChild(div);
-      });
+      target.innerHTML = '<div class="ticket-empty"><i class="bi bi-basket2" style="font-size:26px"></i><br>Aucun article</div>';
+      return;
     }
-    conteneur.querySelectorAll('button[data-act]').forEach(b => {
+    target.innerHTML = '';
+    panier.forEach(l => {
+      const div = document.createElement('div');
+      div.className = 'tk-line';
+      const thumbHtml = l.p.image ? '<img src="' + l.p.image + '" alt="" loading="lazy">' : '<i class="bi bi-capsule tk-thumb-icon"></i>';
+      div.innerHTML =
+        '<div class="tk-thumb">' + thumbHtml + '</div>' +
+        '<div class="tk-info"><div class="tk-nom">' + l.p.nom + '</div>' +
+        '<div class="tk-pu">' + fmt(l.p.prix) + ' / u</div></div>' +
+        '<div class="tk-qty">' +
+          '<button type="button" class="qty-btn" data-act="-" data-id="' + l.p.id + '">&#8722;</button>' +
+          '<span class="qty-val">' + l.qte + '</span>' +
+          '<button type="button" class="qty-btn" data-act="+" data-id="' + l.p.id + '">+</button>' +
+        '</div>' +
+        '<div class="tk-st">' + fmt(l.p.prix * l.qte) + '</div>' +
+        '<button type="button" class="tk-del" data-act="x" data-id="' + l.p.id + '"><i class="bi bi-x-lg"></i></button>';
+      target.appendChild(div);
+    });
+    target.querySelectorAll('button[data-act]').forEach(b => {
       b.addEventListener('click', () => {
         const id = parseInt(b.dataset.id, 10);
         if (b.dataset.act === '+') changerQte(id, 1);
@@ -503,78 +468,120 @@
         else supprimer(id);
       });
     });
-
-    // Champs cachés pour le POST : getlist('medicament_id') / getlist('quantite')
-    cache.innerHTML = '';
-    panier.forEach(l => {
-      cache.insertAdjacentHTML('beforeend',
-        '<input type="hidden" name="medicament_id" value="' + l.p.id + '">' +
-        '<input type="hidden" name="quantite" value="' + l.qte + '">');
-    });
-
-    $('tk-count').textContent = nb + (nb > 1 ? ' articles' : ' article');
-    $('btn-valider').disabled = !panier.size;
-    majTotaux();
   }
 
-  function majTotaux() {
+  function rendreTicket() {
+    const nb = [...panier.values()].reduce((s, l) => s + l.qte, 0);
     const total = totalBrut();
-    const remise = Math.min(Math.max(parseFloat($('remise-input').value) || 0, 0), total);
-    $('tt-st').textContent = fmt(total);
-    $('tt-remise').textContent = '-' + fmt(remise);
-    $('tt-net').textContent = fmt(total - remise);
-    majRendu(total - remise);
-  }
+    const remise = Math.min(Math.max(parseFloat($('remise-input') ? $('remise-input').value : $('remise-input-mobile').value) || 0, 0), total);
+    const net = total - remise;
 
-  function majRendu(net) {
-    const boite = $('rendu-box');
-    const recu = parseFloat($('montant-recu').value);
-    if (isNaN(recu) || recu <= 0) {
-      $('rendu-val').textContent = '—';
-      boite.classList.remove('neg');
-      return;
+    // Desktop ticket
+    const dt = $('ticket-desktop');
+    if (dt) {
+      dt.innerHTML =
+        '<form method="post" id="form-vente" action="{% url "ventes:nouvelle" %}">' +
+        '{% csrf_token %}' +
+        '<div class="ticket">' +
+          '<div class="ticket-head"><h5><i class="bi bi-receipt-cutoff"></i> Ticket</h5>' +
+          '<span class="ticket-count">' + nb + ' article' + (nb > 1 ? 's' : '') + '</span></div>' +
+          '<div class="px-3 pt-3 row g-2">' +
+            '<div class="col-12"><select name="client" id="client-select" class="form-select form-select-sm">' +
+            '<option value="">Client de passage</option>' +
+            {% for cl in clients %}'<option value="{{ cl.pk }}">{{ cl.nom }} {{ cl.prenom }}</option>' +{% endfor %}
+            '</select></div>' +
+            '<div class="col-6"><select name="mode_paiement" id="mode-select" class="form-select form-select-sm">' +
+            '<option value="especes">Especes</option><option value="orange_money">Orange Money</option>' +
+            '<option value="moov_money">Moov Money</option><option value="carte">Carte</option></select></div>' +
+            '<div class="col-6"><input type="number" name="remise" id="remise-input" class="form-control form-control-sm" min="0" step="1" value="' + (parseFloat($('remise-input-mobile') ? $('remise-input-mobile').value : 0) || 0) + '" placeholder="Remise"></div>' +
+          '</div>' +
+          '<div class="ticket-lines mt-2" id="tk-lines"></div>' +
+          '<div id="lignes-container"></div>' +
+          '<div class="ticket-totals">' +
+            '<div class="tt-row"><span>Sous-total</span><span id="tt-st">' + fmt(total) + '</span></div>' +
+            '<div class="tt-row"><span>Remise</span><span id="tt-remise">-' + fmt(remise) + '</span></div>' +
+            '<div class="tt-row net"><span>NET A PAYER</span><span id="tt-net">' + fmt(net) + '</span></div>' +
+          '</div>' +
+          '<div class="quick-cash" id="quick-cash">' +
+            '<button type="button" data-cash="500">500</button>' +
+            '<button type="button" data-cash="1000">1 000</button>' +
+            '<button type="button" data-cash="2000">2 000</button>' +
+            '<button type="button" data-cash="5000">5 000</button>' +
+            '<button type="button" data-cash="10000">10 000</button>' +
+          '</div>' +
+          '<div class="px-3 pb-2">' +
+            '<input type="number" id="montant-recu" class="form-control form-control-sm" min="0" step="1" placeholder="Montant recu…">' +
+            '<div class="rendu-box" id="rendu-box"><span class="rendu-label">Monnaie a rendre</span><span class="rendu-val" id="rendu-val">—</span></div>' +
+          '</div>' +
+          '<div class="ticket-actions">' +
+            '<button type="submit" class="btn-validate" id="btn-valider" disabled><i class="bi bi-check2-circle"></i> Valider la vente</button>' +
+            '<button type="button" class="btn btn-sm btn-outline-secondary" id="btn-vider"><i class="bi bi-x-lg"></i> Vider</button>' +
+          '</div>' +
+        '</div></form>';
+      renderLinesHTML($('tk-lines'));
+      // Desktop events
+      $('remise-input').addEventListener('input', rendreTicket);
+      $('montant-recu').addEventListener('input', () => {
+        const r = parseFloat($('montant-recu').value);
+        const rv = $('rendu-box');
+        if (isNaN(r) || r <= 0) { $('rendu-val').textContent = '—'; rv.classList.remove('neg'); return; }
+        const d = r - net;
+        $('rendu-val').textContent = (d >= 0 ? '' : 'Manque ') + fmt(Math.abs(d));
+        rv.classList.toggle('neg', d < 0);
+      });
+      $('mode-select').addEventListener('change', () => {
+        const esp = $('mode-select').value === 'especes';
+        $('montant-recu').disabled = !esp;
+        document.querySelectorAll('#quick-cash button').forEach(b => b.disabled = !esp);
+      });
+      document.querySelectorAll('#quick-cash button').forEach(b => {
+        b.addEventListener('click', () => { $('montant-recu').value = b.dataset.cash; $('montant-recu').dispatchEvent(new Event('input')); });
+      });
+      $('btn-vider').addEventListener('click', vider);
+      $('form-vente').addEventListener('submit', function(e) {
+        const cache = $('lignes-container');
+        cache.innerHTML = '';
+        panier.forEach(l => {
+          cache.insertAdjacentHTML('beforeend',
+            '<input type="hidden" name="medicament_id" value="' + l.p.id + '">' +
+            '<input type="hidden" name="quantite" value="' + l.qte + '"]');
+        });
+      });
+      $('btn-valider').disabled = !panier.size;
     }
-    const diff = recu - net;
-    $('rendu-val').textContent = (diff >= 0 ? '' : 'Manque ') + fmt(Math.abs(diff));
-    boite.classList.toggle('neg', diff < 0);
+
+    // Mobile: update lines + badge + totals
+    renderLinesHTML($('tk-lines-mobile'));
+    $('fab-badge').textContent = nb;
+    $('tt-st-m').textContent = fmt(total);
+    $('tt-remise-m').textContent = '-' + fmt(remise);
+    $('tt-net-m').textContent = fmt(net);
+    $('btn-valider-mobile').disabled = !panier.size;
   }
 
-  $('remise-input').addEventListener('input', majTotaux);
-  $('montant-recu').addEventListener('input', majTotaux);
-  $('mode-select').addEventListener('change', () => {
-    const especes = $('mode-select').value === 'especes';
-    $('montant-recu').disabled = !especes;
-    document.querySelectorAll('#quick-cash button').forEach(b => b.disabled = !especes);
+  // ── MOBILE MODAL ──
+  $('fab-cart').addEventListener('click', () => { $('cart-overlay').classList.add('open'); });
+  $('cart-close').addEventListener('click', () => { $('cart-overlay').classList.remove('open'); });
+  $('cart-overlay').addEventListener('click', e => { if (e.target === $('cart-overlay')) $('cart-overlay').classList.remove('open'); });
+  $('btn-valider-mobile').addEventListener('click', () => {
+    // Sync mobile fields to hidden form and submit
+    if (!$('form-vente')) { vider(); return; }
+    $('cart-overlay').classList.remove('open');
   });
 
-  // ══ 6. BILLETS RAPIDES ══
-  document.querySelectorAll('#quick-cash button').forEach(b => {
-    b.addEventListener('click', () => {
-      $('montant-recu').value = b.dataset.cash;
-      majTotaux();
-    });
-  });
-
-  // ══ 7. VIDER + RACCOURCIS CLAVIER ══
+  // ── VIDER ──
   function vider() {
     panier.clear();
-    scan.value = '';
-    terme = '';
+    scan.value = ''; terme = '';
     clearBtn.classList.remove('show');
-    rendreGrille();
-    rendreTicket();
-    scan.focus();
+    rendreGrille(); rendreTicket(); scan.focus();
   }
-  $('btn-vider').addEventListener('click', vider);
   document.addEventListener('keydown', e => {
-    if (e.key === 'F2')   { e.preventDefault(); scan.focus(); scan.select(); }
-    if (e.key === 'F9')   { e.preventDefault(); if (!$('btn-valider').disabled) $('form-vente').submit(); }
-    if (e.key === 'Escape'){ e.preventDefault(); vider(); }
+    if (e.key === 'F2') { e.preventDefault(); scan.focus(); scan.select(); }
+    if (e.key === 'Escape') { e.preventDefault(); vider(); }
   });
 
-  // ══ 8. INIT ══
-  rendreGrille();
-  rendreTicket();
-  scan.focus();
+  // ── INIT ──
+  rendreGrille(); rendreTicket(); scan.focus();
 </script>
 {% endblock %}

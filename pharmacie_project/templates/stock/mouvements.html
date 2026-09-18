@@ -37,11 +37,11 @@
           <td><strong>{{ m.medicament.nom }}</strong></td>
           <td>
             {% if m.type_mouvement == 'entree' %}
-            <span class="badge badge-stock-ok module-badge">⬆ Entrée</span>
+            <span class="badge badge-stock-ok module-badge">Entree</span>
             {% elif m.type_mouvement == 'sortie' %}
-            <span class="badge badge-stock-low module-badge">⬇ Sortie</span>
+            <span class="badge badge-stock-low module-badge">Sortie</span>
             {% else %}
-            <span class="badge" style="background:#F0F0F0; color:#555; padding:2px 8px; border-radius:4px;">⟳ Ajustement</span>
+            <span class="badge" style="background:#F0F0F0; color:#555; padding:2px 8px; border-radius:4px;">Ajustement</span>
             {% endif %}
           </td>
           <td><strong>{{ m.quantite }}</strong></td>
@@ -59,6 +59,37 @@
         {% endfor %}
       </tbody>
     </table>
+  </div>
+
+  <!-- VERSION MOBILE : CARTES -->
+  <div class="mobile-cards p-3">
+    {% for m in mouvements %}
+    <div class="mc-card">
+      <div class="mc-top">
+        <div>
+          <div class="mc-title">{{ m.medicament.nom }}</div>
+          <div style="font-size:11px;color:#aaa;">{{ m.date|date:"d/m/Y H:i" }}</div>
+        </div>
+        {% if m.type_mouvement == 'entree' %}
+        <span class="mc-badge badge-stock-ok">Entree</span>
+        {% elif m.type_mouvement == 'sortie' %}
+        <span class="mc-badge badge-stock-low">Sortie</span>
+        {% else %}
+        <span class="mc-badge" style="background:#F0F0F0;color:#555;">Ajustement</span>
+        {% endif %}
+      </div>
+      <div class="mc-rows">
+        <div><span class="mc-label">Quantite</span><div class="mc-val" style="font-weight:700;">{{ m.quantite }}</div></div>
+        <div><span class="mc-label">Fournisseur</span><div class="mc-val">{{ m.fournisseur.nom|default:"-" }}</div></div>
+        <div><span class="mc-label">Motif</span><div class="mc-val">{{ m.motif|default:"-" }}</div></div>
+        <div><span class="mc-label">Utilisateur</span><div class="mc-val">{{ m.utilisateur|default:"-" }}</div></div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-4" style="color:#aaa;">
+      <i class="bi bi-arrow-left-right fs-2 d-block mb-2"></i>Aucun mouvement
+    </div>
+    {% endfor %}
   </div>
 </div>
 

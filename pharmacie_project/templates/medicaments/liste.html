@@ -158,6 +158,38 @@
       </tbody>
     </table>
   </div>
+
+  <!-- VERSION MOBILE : CARTES -->
+  <div class="mobile-cards p-3">
+    {% for med in medicaments %}
+    <div class="mc-card">
+      <div class="mc-top">
+        <div class="mc-title">{{ med.nom }}</div>
+        {% if med.est_expire %}
+        <span class="mc-badge badge-expire">Expire</span>
+        {% elif med.stock_faible %}
+        <span class="mc-badge badge-stock-low">Stock faible</span>
+        {% else %}
+        <span class="mc-badge badge-stock-ok">OK</span>
+        {% endif %}
+      </div>
+      <div class="mc-rows">
+        <div><span class="mc-label">Categorie</span><div class="mc-val">{{ med.categorie|default:"-" }}</div></div>
+        <div><span class="mc-label">Prix</span><div class="mc-val" style="font-weight:700;">{{ med.prix_vente }} FCFA</div></div>
+        <div><span class="mc-label">Stock</span><div class="mc-val" style="font-weight:700;">{{ med.quantite_stock }}</div></div>
+        <div><span class="mc-label">Expiration</span><div class="mc-val">{{ med.date_expiration|default:"-" }}</div></div>
+      </div>
+      <div class="mc-actions">
+        <a href="{% url 'medicaments:modifier' med.pk %}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-pencil me-1"></i>Modifier</a>
+        <a href="{% url 'medicaments:supprimer' med.pk %}" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash me-1"></i>Supprimer</a>
+      </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-4" style="color:#aaa;">
+      <i class="bi bi-capsule fs-2 d-block mb-2"></i>Aucun medicament
+    </div>
+    {% endfor %}
+  </div>
 </div>
 
 {% endblock %}

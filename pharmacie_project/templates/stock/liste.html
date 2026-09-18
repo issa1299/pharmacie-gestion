@@ -62,14 +62,14 @@
           <td style="color:#888;">{{ med.seuil_alerte }}</td>
           <td>
             {% if med.stock_faible %}
-            <span class="badge badge-stock-low module-badge">⚠ Stock faible</span>
+            <span class="badge badge-stock-low module-badge">Stock faible</span>
             {% else %}
-            <span class="badge badge-stock-ok module-badge">✓ Normal</span>
+            <span class="badge badge-stock-ok module-badge">Normal</span>
             {% endif %}
           </td>
           <td>
             {% if med.est_expire %}
-            <span style="color:#E65100; font-size:13px;">⛔ Expiré</span>
+            <span style="color:#E65100; font-size:13px;">Expire</span>
             {% else %}
             <span style="color:#888; font-size:13px;">{{ med.date_expiration|default:"—" }}</span>
             {% endif %}
@@ -86,6 +86,34 @@
         {% endfor %}
       </tbody>
     </table>
+  </div>
+
+  <!-- VERSION MOBILE : CARTES -->
+  <div class="mobile-cards p-3">
+    {% for med in medicaments %}
+    <div class="mc-card">
+      <div class="mc-top">
+        <div class="mc-title">{{ med.nom }}</div>
+        {% if med.est_expire %}
+        <span class="mc-badge" style="background:#FFF3E0;color:#E65100;">Expire</span>
+        {% elif med.stock_faible %}
+        <span class="mc-badge badge-stock-low">Stock faible</span>
+        {% else %}
+        <span class="mc-badge badge-stock-ok">OK</span>
+        {% endif %}
+      </div>
+      <div class="mc-rows">
+        <div><span class="mc-label">Categorie</span><div class="mc-val">{{ med.categorie|default:"-" }}</div></div>
+        <div><span class="mc-label">Stock</span><div class="mc-val" style="font-weight:700;font-size:16px;">{{ med.quantite_stock }}</div></div>
+        <div><span class="mc-label">Seuil</span><div class="mc-val">{{ med.seuil_alerte }}</div></div>
+        <div><span class="mc-label">Expiration</span><div class="mc-val">{{ med.date_expiration|default:"-" }}</div></div>
+      </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-4" style="color:#aaa;">
+      <i class="bi bi-boxes fs-2 d-block mb-2"></i>Aucun medicament
+    </div>
+    {% endfor %}
   </div>
 </div>
 
