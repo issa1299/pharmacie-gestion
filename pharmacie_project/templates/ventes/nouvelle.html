@@ -225,6 +225,7 @@
     animation: slideUp .25s ease;
   }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
   .cart-sheet-head {
     display: flex; align-items: center; justify-content: space-between;
     padding: 16px 20px; border-bottom: 1px solid #E8EBE9;
@@ -608,6 +609,22 @@
   let html5QrCode = null;
   let scannerRunning = false;
 
+  function showToast(msg, type) {
+    let container = document.getElementById('toast-container');
+    if (!container) {
+      container = document.createElement('div');
+      container.id = 'toast-container';
+      container.style.cssText = 'position:fixed;top:80px;right:20px;z-index:999;display:flex;flex-direction:column;gap:8px;';
+      document.body.appendChild(container);
+    }
+    const toast = document.createElement('div');
+    const bg = type === 'success' ? '#27AE60' : type === 'warning' ? '#E67E22' : '#C0392B';
+    toast.style.cssText = 'background:' + bg + ';color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;box-shadow:0 4px 16px rgba(0,0,0,.2);animation:slideIn .3s ease;max-width:320px;';
+    toast.textContent = msg;
+    container.appendChild(toast);
+    setTimeout(() => { toast.style.opacity = '0'; toast.style.transition = 'opacity .3s'; setTimeout(() => toast.remove(), 300); }, 3000);
+  }
+
   $('btn-scan-barcode').addEventListener('click', () => {
     const region = $('scanner-region');
     if (scannerRunning) {
@@ -627,17 +644,18 @@
         const p = PRODUITS.find(x => x.code_barre && x.code_barre === decodedText);
         if (p && p.stock > 0) {
           ajouter(p);
+          showToast(p.nom + ' ajouté au panier', 'success');
           scan.value = '';
           terme = '';
           rendreGrille();
           arreterScanner();
         } else if (p && p.stock <= 0) {
+          showToast('Rupture de stock : ' + p.nom, 'warning');
           scan.value = decodedText;
           scan.select();
         } else {
+          showToast('Code-barres ' + decodedText + ' — produit non enregistré dans l\'app', 'error');
           scan.value = decodedText;
-          terme = decodedText.toLowerCase();
-          rendreGrille();
         }
       },
       () => {}
@@ -645,7 +663,7 @@
      .catch(err => {
        region.style.display = 'none';
        $('btn-scan-barcode').innerHTML = '<i class="bi bi-camera me-1"></i>Scanner code-barres';
-       alert('Camera non disponible : ' + err);
+       showToast('Camera non disponible : ' + err, 'error');
      });
   });
 
