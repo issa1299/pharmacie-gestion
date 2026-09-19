@@ -13,10 +13,6 @@
   .scan-msg {
     padding: 10px; text-align: center; font-size: 12px; color: var(--primary); font-weight: 600;
   }
-  .auto-calc {
-    background: #F0FAF5; border: 1px solid #CBE5DC; border-radius: 8px;
-    padding: 8px 12px; margin-top: 6px; font-size: 12px; color: var(--primary);
-  }
 </style>
 {% endblock %}
 
@@ -95,19 +91,11 @@
             <div class="col-12">
               <div class="form-section-title"><i class="bi bi-cash-coin"></i>Tarification</div>
             </div>
-            <div class="col-md-4">
-              <label class="form-label fw-semibold">Prix d'achat ({{ site_params.devise }}) *</label>
+            <div class="col-md-6">
+              <label class="form-label fw-semibold">Prix d'achat ({{ site_params.devise }})</label>
               {{ form.prix_achat }}
-              {% if form.prix_achat.errors %}
-              <div class="text-danger small mt-1">{{ form.prix_achat.errors }}</div>
-              {% endif %}
             </div>
-            <div class="col-md-4">
-              <label class="form-label fw-semibold">Marge (%)</label>
-              <input type="number" id="marge-input" class="form-control" value="30" min="0" step="1">
-              <div class="auto-calc" id="marge-preview">Prix de vente calcule : —</div>
-            </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
               <label class="form-label fw-semibold">Prix de vente ({{ site_params.devise }}) *</label>
               {{ form.prix_vente }}
               {% if form.prix_vente.errors %}
@@ -164,25 +152,8 @@
   var descInput = document.querySelector('textarea[name="description"]');
   var prixAchatInput = document.querySelector('input[name="prix_achat"]');
   var prixVenteInput = document.querySelector('input[name="prix_vente"]');
-  var margeInput = document.getElementById('marge-input');
-  var margePreview = document.getElementById('marge-preview');
   var scanner = null;
   var running = false;
-
-  // ── Calcul auto prix de vente ──
-  function calculerPrixVente() {
-    var achat = parseFloat(prixAchatInput.value) || 0;
-    var marge = parseFloat(margeInput.value) || 0;
-    if (achat > 0) {
-      var vente = Math.round(achat * (1 + marge / 100));
-      prixVenteInput.value = vente;
-      margePreview.textContent = 'Prix de vente calcule : ' + new Intl.NumberFormat('fr-FR').format(vente) + ' FCFA';
-    } else {
-      margePreview.textContent = 'Prix de vente calcule : —';
-    }
-  }
-  prixAchatInput.addEventListener('input', calculerPrixVente);
-  margeInput.addEventListener('input', calculerPrixVente);
 
   // ── Scanner ──
   btnScan.addEventListener('click', function() {
