@@ -155,7 +155,7 @@ def nouvelle_vente(request):
             url_paiement = initier_paiement(vente)
             return redirect(url_paiement)
         messages.success(request, f"Vente {vente.numero_facture} enregistrée !")
-        return redirect('ventes:detail', pk=vente.pk)
+        return redirect('ventes:imprimer_ticket', pk=vente.pk)
 
     return render(request, 'ventes/nouvelle.html', contexte)
 
@@ -169,6 +169,24 @@ def detail_vente(request, pk):
         'lignes': lignes,
         'site_params': params,
         'params': params,
+    })
+
+@login_required
+def imprimer_ticket(request, pk):
+    """Affiche le ticket format impression thermique + auto-print."""
+    vente = get_object_or_404(Vente, pk=pk)
+    lignes = vente.lignes.select_related('medicament').all()
+    params, _ = Parametres.objects.get_or_create(pk=1)
+    return render(request, 'ventes/ticket_impression.html', {
+        'vente': vente,
+        'lignes': lignes,
+        'nom_pharmacie': params.nom_pharmacie or 'PharmaGest',
+        'adresse': params.adresse or '',
+        'telephone': params.telephone or '',
+        'devise': params.devise or 'FCFA',
+        'client_nom': str(vente.client) if vente.client else 'Client anonyme',
+        'caissier': str(vente.utilisateur) if vente.utilisateur else '—',
+        'mode_paiement': vente.get_mode_paiement_display(),
     })
 
 @login_required

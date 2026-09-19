@@ -8,6 +8,7 @@ urlpatterns = [
     path('', views.liste_ventes, name='liste'),
     path('nouvelle/', views.nouvelle_vente, name='nouvelle'),
     path('<int:pk>/', views.detail_vente, name='detail'),
+    path('<int:pk>/imprimer/', views.imprimer_ticket, name='imprimer_ticket'),
     path('<int:pk>/json/', views.detail_vente_json, name='detail_json'),
     path('<int:pk>/facture/pdf/', views.facture_pdf, name='facture_pdf'),
     path('<int:pk>/annuler/', views.annuler_vente, name='annuler'),
