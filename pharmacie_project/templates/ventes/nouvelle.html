@@ -189,14 +189,24 @@
   .btn-validate:disabled { background: #B9C8C2; cursor: not-allowed; }
   .kbd-hint { font-size: 11px; color: #8a9691; text-align: center; }
   @media (max-width: 991px) {
-    .caisse-wrap { flex-direction: column; }
+    .caisse-wrap { flex-direction: column; gap: 12px; }
     .caisse-right { width: 100%; position: static; }
-    .prod-grid { max-height: none; }
+    .prod-grid { max-height: none; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 8px; }
     .desktop-ticket { display: none !important; }
+    .search-panel { padding: 12px; margin-bottom: 10px; }
+    .sp-title { font-size: 14px; margin-bottom: 8px; }
   }
   @media (max-width: 480px) {
-    .prod-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
-    .prod-thumb { height: 70px; }
+    .prod-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .prod-thumb { height: 72px; border-radius: 8px; }
+    .prod-card { padding: 8px; gap: 5px; }
+    .prod-name { font-size: 12px; min-height: 28px; }
+    .prod-price { font-size: 14px; }
+    .prod-stock { font-size: 10px; }
+    .chips { gap: 5px; }
+    .chip { font-size: 11px; padding: 4px 10px; }
+    .scan-box { flex-direction: column; }
+    .scan-input { font-size: 15px; }
   }
   .fab-cart {
     display: none; position: fixed; bottom: 24px; right: 24px; z-index: 150;
@@ -216,20 +226,23 @@
   @media (max-width: 991px) { .fab-cart { display: flex; } }
   .cart-overlay {
     display: none; position: fixed; inset: 0; z-index: 300;
-    background: rgba(0,0,0,.45); align-items: flex-end; justify-content: center;
+    background: rgba(0,0,0,.5); align-items: flex-end; justify-content: center;
+    backdrop-filter: blur(2px);
   }
   .cart-overlay.open { display: flex; }
   .cart-sheet {
-    background: #fff; width: 100%; max-width: 480px; max-height: 85vh;
-    border-radius: 16px 16px 0 0; overflow-y: auto;
-    animation: slideUp .25s ease;
+    background: #fff; width: 100%; max-width: 480px; max-height: 90vh;
+    border-radius: 20px 20px 0 0; overflow-y: auto;
+    animation: slideUp .3s ease;
+    box-shadow: 0 -8px 32px rgba(0,0,0,.15);
   }
   @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
   @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
   .cart-sheet-head {
     display: flex; align-items: center; justify-content: space-between;
-    padding: 16px 20px; border-bottom: 1px solid #E8EBE9;
+    padding: 18px 20px; border-bottom: 1px solid #E8EBE9;
     position: sticky; top: 0; background: #fff; z-index: 1;
+    border-radius: 20px 20px 0 0;
   }
   .cart-sheet-head h5 { margin: 0; font-size: 16px; font-weight: 700; }
 </style>
