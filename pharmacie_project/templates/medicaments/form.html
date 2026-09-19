@@ -13,6 +13,10 @@
   .scan-msg {
     padding: 10px; text-align: center; font-size: 12px; color: var(--primary); font-weight: 600;
   }
+  .auto-calc {
+    background: #F0FAF5; border: 1px solid #CBE5DC; border-radius: 8px;
+    padding: 8px 12px; margin-top: 6px; font-size: 12px; color: var(--primary);
+  }
 </style>
 {% endblock %}
 
@@ -34,6 +38,19 @@
             <div class="col-12">
               <div class="form-section-title"><i class="bi bi-info-circle"></i>Informations generales</div>
             </div>
+
+            <!-- Scanner en haut -->
+            <div class="col-12">
+              <button type="button" class="btn btn-success w-100 py-3" id="btn-scan-form" style="font-size:16px; font-weight:700;">
+                <i class="bi bi-camera me-2"></i>Scanner le code-barres du medicament
+              </button>
+              <div id="scan-zone-form" class="scan-zone">
+                <div id="scan-region-form"></div>
+                <div class="scan-msg"><i class="bi bi-camera me-1"></i>Directionnez le code-barres sur la boite</div>
+              </div>
+              <div id="scan-result" class="mt-2" style="font-size:13px;"></div>
+            </div>
+
             <!-- Nom -->
             <div class="col-md-8">
               <label class="form-label fw-semibold">Nom du medicament *</label>
@@ -59,17 +76,7 @@
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">Code barre</label>
-              <div class="input-group">
-                {{ form.code_barre }}
-                <button type="button" class="btn btn-outline-success" id="btn-scan-form" title="Scanner code-barres">
-                  <i class="bi bi-camera"></i>
-                </button>
-              </div>
-              <div id="scan-zone-form" class="scan-zone">
-                <div id="scan-region-form"></div>
-                <div class="scan-msg"><i class="bi bi-camera me-1"></i>Directionnez le code-barres du medicament</div>
-              </div>
-              <div id="scan-result" class="mt-1" style="font-size:12px;"></div>
+              {{ form.code_barre }}
             </div>
 
             <!-- Etagere -->
@@ -88,14 +95,19 @@
             <div class="col-12">
               <div class="form-section-title"><i class="bi bi-cash-coin"></i>Tarification</div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
               <label class="form-label fw-semibold">Prix d'achat ({{ site_params.devise }}) *</label>
               {{ form.prix_achat }}
               {% if form.prix_achat.errors %}
               <div class="text-danger small mt-1">{{ form.prix_achat.errors }}</div>
               {% endif %}
             </div>
-            <div class="col-md-6">
+            <div class="col-md-4">
+              <label class="form-label fw-semibold">Marge (%)</label>
+              <input type="number" id="marge-input" class="form-control" value="30" min="0" step="1">
+              <div class="auto-calc" id="marge-preview">Prix de vente calcule : —</div>
+            </div>
+            <div class="col-md-4">
               <label class="form-label fw-semibold">Prix de vente ({{ site_params.devise }}) *</label>
               {{ form.prix_vente }}
               {% if form.prix_vente.errors %}
@@ -150,15 +162,35 @@
   var codeBarreInput = document.querySelector('input[name="code_barre"]');
   var nomInput = document.querySelector('input[name="nom"]');
   var descInput = document.querySelector('textarea[name="description"]');
+  var prixAchatInput = document.querySelector('input[name="prix_achat"]');
+  var prixVenteInput = document.querySelector('input[name="prix_vente"]');
+  var margeInput = document.getElementById('marge-input');
+  var margePreview = document.getElementById('marge-preview');
   var scanner = null;
   var running = false;
 
+  // ── Calcul auto prix de vente ──
+  function calculerPrixVente() {
+    var achat = parseFloat(prixAchatInput.value) || 0;
+    var marge = parseFloat(margeInput.value) || 0;
+    if (achat > 0) {
+      var vente = Math.round(achat * (1 + marge / 100));
+      prixVenteInput.value = vente;
+      margePreview.textContent = 'Prix de vente calcule : ' + new Intl.NumberFormat('fr-FR').format(vente) + ' FCFA';
+    } else {
+      margePreview.textContent = 'Prix de vente calcule : —';
+    }
+  }
+  prixAchatInput.addEventListener('input', calculerPrixVente);
+  margeInput.addEventListener('input', calculerPrixVente);
+
+  // ── Scanner ──
   btnScan.addEventListener('click', function() {
     if (running) { stopScanner(); return; }
     zone.classList.add('active');
-    btnScan.innerHTML = '<i class="bi bi-stop-circle"></i>';
-    btnScan.classList.remove('btn-outline-success');
-    btnScan.classList.add('btn-outline-danger');
+    btnScan.innerHTML = '<i class="bi bi-stop-circle me-2"></i>Arreter le scanner';
+    btnScan.classList.remove('btn-success');
+    btnScan.classList.add('btn-danger');
 
     if (!scanner) scanner = new Html5Qrcode('scan-region-form');
     scanner.start(
@@ -166,17 +198,20 @@
       { fps: 10, qrbox: { width: 280, height: 100 }, aspectRatio: 2.0 },
       function(code) {
         codeBarreInput.value = code;
-        result.innerHTML = '<span style="color:#27AE60;"><i class="bi bi-check-circle me-1"></i>Code-barres ' + code + ' detecte</span>';
+        result.innerHTML = '<span style="color:#27AE60;"><i class="bi bi-check-circle me-1"></i>Code-barres <strong>' + code + '</strong> detecte !</span>';
         stopScanner();
         chercherProduit(code);
       },
       function() {}
     ).then(function() { running = true; })
      .catch(function() {
-       result.innerHTML = '<span style="color:#C0392B;"><i class="bi bi-x-circle me-1"></i>Camera non disponible</span>';
+       result.innerHTML = '<span style="color:#C0392B;"><i class="bi bi-x-circle me-1"></i>Camera non disponible. Autorisez la camera ou activez HTTPS.</span>';
        stopScanner();
      });
   });
+
+  // Ouvrir automatiquement le scanner au chargement
+  setTimeout(function() { btnScan.click(); }, 500);
 
   function stopScanner() {
     if (scanner && running) {
@@ -184,13 +219,13 @@
     }
     running = false;
     zone.classList.remove('active');
-    btnScan.innerHTML = '<i class="bi bi-camera"></i>';
-    btnScan.classList.remove('btn-outline-danger');
-    btnScan.classList.add('btn-outline-success');
+    btnScan.innerHTML = '<i class="bi bi-camera me-2"></i>Scanner le code-barres du medicament';
+    btnScan.classList.remove('btn-danger');
+    btnScan.classList.add('btn-success');
   }
 
   function chercherProduit(code) {
-    result.innerHTML = '<span style="color:#888;"><i class="bi bi-search me-1"></i>Recherche du medicament...</span>';
+    result.innerHTML = '<span style="color:#888;"><i class="bi bi-search me-1"></i>Recherche du medicament dans la base FDA...</span>';
     fetch('https://api.fda.gov/drug/ndc.json?search=description:' + code + '&limit=1')
       .then(function(r) { return r.json(); })
       .then(function(d) {
@@ -200,13 +235,13 @@
           var desc = (med.description || '').substring(0, 200);
           if (nom && !nomInput.value) nomInput.value = nom;
           if (desc && descInput && !descInput.value) descInput.value = desc;
-          result.innerHTML = '<span style="color:#27AE60;"><i class="bi bi-check-circle me-1"></i>' + nom + ' trouve et rempli automatiquement</span>';
+          result.innerHTML = '<span style="color:#27AE60;"><i class="bi bi-check-circle me-1"></i><strong>' + nom + '</strong> trouve ! Nom et description remplis. Entrez le prix d\'achat et la marge.</span>';
         } else {
-          result.innerHTML = '<span style="color:#E67E22;"><i class="bi bi-info-circle me-1"></i>Code ' + code + ' non trouve dans la base FDA. Remplissez les champs manuellement.</span>';
+          result.innerHTML = '<span style="color:#E67E22;"><i class="bi bi-info-circle me-1"></i>Code <strong>' + code + '</strong> non trouve dans la base FDA. Remplissez les champs manuellement.</span>';
         }
       })
       .catch(function() {
-        result.innerHTML = '<span style="color:#E67E22;"><i class="bi bi-info-circle me-1"></i>Code ' + code + ' scanned. Remplissez les champs manuellement.</span>';
+        result.innerHTML = '<span style="color:#E67E22;"><i class="bi bi-info-circle me-1"></i>Code <strong>' + code + '</strong> scanne. Remplissez les champs manuellement.</span>';
       });
   }
 })();
