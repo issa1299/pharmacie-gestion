@@ -509,10 +509,16 @@
       .topbar-title { font-size: 14px; }
       .main-content { padding: 14px; margin-top: 54px; }
 
+      /* Grid → colonnes uniques */
+      .row.g-3 { gap: 12px; }
+      .row.g-3 > [class*="col-"] { width: 100%; flex: 0 0 100%; max-width: 100%; }
+      .row.g-2 > [class*="col-"] { flex: 0 0 100%; max-width: 100%; }
+
       /* Stat cards empiles */
       .stat-card { padding: 14px 16px; }
       .stat-value { font-size: 18px; }
       .stat-icon { width: 40px; height: 40px; font-size: 18px; }
+      .row .stat-card { margin-bottom: 8px; }
 
       /* Tables → cartes */
       .table { font-size: 12px; }
@@ -524,6 +530,7 @@
       .btn-primary { width: 100%; }
       .d-flex.gap-2 { flex-direction: column; }
       .d-flex.gap-2 .btn { width: 100%; }
+      .d-flex.justify-content-between { flex-direction: column; gap: 8px; }
 
       /* Formulaires */
       .form-control, .form-select { font-size: 14px; min-height: 44px; padding: 10px 12px; }
@@ -534,11 +541,16 @@
       .card-header-custom h5 { font-size: 13px; }
       .module-card { border-radius: 12px; }
 
+      /* Toolbar */
+      .module-toolbar { padding: 10px; }
+      .module-toolbar .d-flex { gap: 8px !important; }
+
       /* Alert menu */
       .alert-menu { width: min(320px, calc(100vw - 24px)); }
 
       /* Pagination */
       .pagination { flex-wrap: wrap; justify-content: center; }
+      .page-link { padding: 6px 10px; font-size: 12px; }
 
       /* Badge taille */
       .badge { font-size: 11px; }
@@ -551,6 +563,23 @@
       .mc-title { font-size: 14px; }
       .mc-rows { gap: 8px; }
       .mc-actions { padding-top: 8px; }
+
+      /* List groups (clients, detail) */
+      .list-group-item { font-size: 13px; padding: 10px 14px; }
+
+      /* Ticket detail */
+      .ticket-wrapper { width: 100%; padding: 16px 12px; font-size: 12px; }
+      .t-logo { font-size: 15px; }
+      .t-row { font-size: 12px; }
+
+      /* Etagere cards */
+      .d-flex.justify-content-between.align-items-start { flex-wrap: wrap; gap: 6px; }
+
+      /* Sections titre */
+      .form-section-title { font-size: 11px; margin: 16px 0 10px; }
+
+      /* Boutons icons */
+      .btn-icon { width: 30px; height: 30px; font-size: 13px; }
     }
   </style>
 
