@@ -1,6 +1,20 @@
 {% extends 'base.html' %}
+{% load static %}
 {% block title %}{{ titre }} — PharmaGest{% endblock %}
 {% block page_title %}{{ titre }}{% endblock %}
+
+{% block extra_css %}
+<style>
+  .scan-zone {
+    display: none; margin-top: 10px; border-radius: 10px; overflow: hidden;
+    border: 2px dashed var(--primary); background: #F4F8F6;
+  }
+  .scan-zone.active { display: block; }
+  .scan-msg {
+    padding: 10px; text-align: center; font-size: 12px; color: var(--primary); font-weight: 600;
+  }
+</style>
+{% endblock %}
 
 {% block content %}
 <div class="row justify-content-center">
@@ -13,13 +27,16 @@
         </a>
       </div>
       <div class="p-4">
-        <form method="post" enctype="multipart/form-data">
+        <form method="post" enctype="multipart/form-data" id="form-medicament">
           {% csrf_token %}
 
           <div class="row g-3">
+            <div class="col-12">
+              <div class="form-section-title"><i class="bi bi-info-circle"></i>Informations generales</div>
+            </div>
             <!-- Nom -->
             <div class="col-md-8">
-              <label class="form-label fw-semibold">Nom du médicament *</label>
+              <label class="form-label fw-semibold">Nom du medicament *</label>
               {{ form.nom }}
               {% if form.nom.errors %}
               <div class="text-danger small mt-1">{{ form.nom.errors }}</div>
@@ -35,20 +52,31 @@
               {% endif %}
             </div>
 
-            <!-- Catégorie + Code barre -->
+            <!-- Categorie + Code barre -->
             <div class="col-md-6">
-              <label class="form-label fw-semibold">Catégorie</label>
+              <label class="form-label fw-semibold">Categorie</label>
               {{ form.categorie }}
             </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">Code barre</label>
-              {{ form.code_barre }}
+              <div class="input-group">
+                {{ form.code_barre }}
+                <button type="button" class="btn btn-outline-success" id="btn-scan-form" title="Scanner code-barres">
+                  <i class="bi bi-camera"></i>
+                </button>
+              </div>
+              <div id="scan-zone-form" class="scan-zone">
+                <div id="scan-region-form"></div>
+                <div class="scan-msg"><i class="bi bi-camera me-1"></i>Directionnez le code-barres du medicament</div>
+              </div>
+              <div id="scan-result" class="mt-1" style="font-size:12px;"></div>
             </div>
-            <!-- Étagère -->
+
+            <!-- Etagere -->
             <div class="col-md-6">
-              <label class="form-label fw-semibold">Étagère</label>
+              <label class="form-label fw-semibold">Etagere</label>
               {{ form.etagere }}
-            </div>  
+            </div>
 
             <!-- Description -->
             <div class="col-12">
@@ -57,6 +85,9 @@
             </div>
 
             <!-- Prix -->
+            <div class="col-12">
+              <div class="form-section-title"><i class="bi bi-cash-coin"></i>Tarification</div>
+            </div>
             <div class="col-md-6">
               <label class="form-label fw-semibold">Prix d'achat ({{ site_params.devise }}) *</label>
               {{ form.prix_achat }}
@@ -73,14 +104,17 @@
             </div>
 
             <!-- Stock -->
+            <div class="col-12">
+              <div class="form-section-title"><i class="bi bi-box-seam"></i>Stock & peremption</div>
+            </div>
             <div class="col-md-4">
-              <label class="form-label fw-semibold">Quantité en stock</label>
+              <label class="form-label fw-semibold">Quantite en stock</label>
               {{ form.quantite_stock }}
             </div>
             <div class="col-md-4">
               <label class="form-label fw-semibold">Seuil d'alerte</label>
               {{ form.seuil_alerte }}
-              <div class="form-text">Alerte si stock ≤ ce seuil</div>
+              <div class="form-text">Alerte si stock <= ce seuil</div>
             </div>
             <div class="col-md-4">
               <label class="form-label fw-semibold">Date d'expiration</label>
@@ -104,16 +138,77 @@
     </div>
   </div>
 </div>
-
-{% block extra_js %}
-<script>
-  // Ajouter la classe Bootstrap à tous les champs du formulaire
-  document.querySelectorAll('input, select, textarea').forEach(el => {
-    if (!el.classList.contains('btn') && el.type !== 'hidden') {
-      el.classList.add(el.tagName === 'SELECT' ? 'form-select' : 'form-control');
-    }
-  });
-</script>
 {% endblock %}
 
+{% block extra_js %}
+<script src="{% static 'js/html5-qrcode.min.js' %}"></script>
+<script>
+(function() {
+  var btnScan = document.getElementById('btn-scan-form');
+  var zone = document.getElementById('scan-zone-form');
+  var result = document.getElementById('scan-result');
+  var codeBarreInput = document.querySelector('input[name="code_barre"]');
+  var nomInput = document.querySelector('input[name="nom"]');
+  var descInput = document.querySelector('textarea[name="description"]');
+  var scanner = null;
+  var running = false;
+
+  btnScan.addEventListener('click', function() {
+    if (running) { stopScanner(); return; }
+    zone.classList.add('active');
+    btnScan.innerHTML = '<i class="bi bi-stop-circle"></i>';
+    btnScan.classList.remove('btn-outline-success');
+    btnScan.classList.add('btn-outline-danger');
+
+    if (!scanner) scanner = new Html5Qrcode('scan-region-form');
+    scanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 280, height: 100 }, aspectRatio: 2.0 },
+      function(code) {
+        codeBarreInput.value = code;
+        result.innerHTML = '<span style="color:#27AE60;"><i class="bi bi-check-circle me-1"></i>Code-barres ' + code + ' detecte</span>';
+        stopScanner();
+        chercherProduit(code);
+      },
+      function() {}
+    ).then(function() { running = true; })
+     .catch(function() {
+       result.innerHTML = '<span style="color:#C0392B;"><i class="bi bi-x-circle me-1"></i>Camera non disponible</span>';
+       stopScanner();
+     });
+  });
+
+  function stopScanner() {
+    if (scanner && running) {
+      scanner.stop().then(function() { scanner.clear(); }).catch(function() {});
+    }
+    running = false;
+    zone.classList.remove('active');
+    btnScan.innerHTML = '<i class="bi bi-camera"></i>';
+    btnScan.classList.remove('btn-outline-danger');
+    btnScan.classList.add('btn-outline-success');
+  }
+
+  function chercherProduit(code) {
+    result.innerHTML = '<span style="color:#888;"><i class="bi bi-search me-1"></i>Recherche du medicament...</span>';
+    fetch('https://api.fda.gov/drug/ndc.json?search=description:' + code + '&limit=1')
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.results && d.results.length > 0) {
+          var med = d.results[0];
+          var nom = med.openfda && med.openfda.brand_name ? med.openfda.brand_name[0] : (med.generic_name || med.product_name || '');
+          var desc = (med.description || '').substring(0, 200);
+          if (nom && !nomInput.value) nomInput.value = nom;
+          if (desc && descInput && !descInput.value) descInput.value = desc;
+          result.innerHTML = '<span style="color:#27AE60;"><i class="bi bi-check-circle me-1"></i>' + nom + ' trouve et rempli automatiquement</span>';
+        } else {
+          result.innerHTML = '<span style="color:#E67E22;"><i class="bi bi-info-circle me-1"></i>Code ' + code + ' non trouve dans la base FDA. Remplissez les champs manuellement.</span>';
+        }
+      })
+      .catch(function() {
+        result.innerHTML = '<span style="color:#E67E22;"><i class="bi bi-info-circle me-1"></i>Code ' + code + ' scanned. Remplissez les champs manuellement.</span>';
+      });
+  }
+})();
+</script>
 {% endblock %}
